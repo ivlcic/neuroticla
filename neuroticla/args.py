@@ -79,13 +79,13 @@ class CommonArguments:
             raise NotADirectoryError(dir_name)
 
     @classmethod
-    def _data_path(cls, package: str) -> str:
+    def _package_path(cls, path_type: str, package: str) -> str:
         path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(path, 'data', package)
+        return os.path.join(path, path_type, package)
 
     @classmethod
-    def raw_data_dir(cls, package, parser: ArgumentParser, name_or_flags: Tuple[str, ...]):
-        path = os.path.join(CommonArguments._data_path(package), 'raw')
+    def raw_data_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
+        path = os.path.join(CommonArguments._package_path('data', package), 'raw')
         parser.add_argument(
             *name_or_flags,
             help='Corpora raw directory (default: %(default)s)',
@@ -94,11 +94,21 @@ class CommonArguments:
         )
 
     @classmethod
-    def processed_data_dir(cls, package, parser: ArgumentParser, name_or_flags: Tuple[str, ...]):
-        path = os.path.join(CommonArguments._data_path(package), 'processed')
+    def processed_data_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
+        path = os.path.join(CommonArguments._package_path('data', package), 'processed')
         parser.add_argument(
             *name_or_flags,
             help='Processed data directory (default: %(default)s)',
+            type=CommonArguments._is_or_make_dir_path,
+            default=path
+        )
+
+    @classmethod
+    def tmp_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
+        path = os.path.join(CommonArguments._package_path('tmp', package), 'processed')
+        parser.add_argument(
+            *name_or_flags,
+            help='Process working tmp directory (default: %(default)s)',
             type=CommonArguments._is_or_make_dir_path,
             default=path
         )
