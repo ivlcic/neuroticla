@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger('ner.prep.conll')
 
 
-def filter_cnec(proc_fname: str):
+def clean(args):
     # I = ORG
     # T = MISC (time) -> O
     # P = PER
@@ -16,7 +16,7 @@ def filter_cnec(proc_fname: str):
     data = ''
     counter = 0
     sent_id = 0
-    with open(os.path.join(proc_fname), 'rt', encoding='utf-8') as fp:
+    with open(os.path.join(args.process_file_name), 'rt', encoding='utf-8') as fp:
         line = 'whatever'
         while line:
             line = fp.readline()
@@ -36,5 +36,5 @@ def filter_cnec(proc_fname: str):
             data += str(counter) + '\t' + tokens[0] + '\t' + tokens[3]
             counter += 1
 
-    with open(os.path.join(proc_fname), 'wt', encoding='utf-8') as fp:
+    with open(os.path.join(args.process_file_name), 'wt', encoding='utf-8') as fp:
         fp.write(data)

@@ -105,7 +105,7 @@ class CommonArguments:
 
     @classmethod
     def tmp_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
-        path = os.path.join(CommonArguments._package_path('tmp', package), 'processed')
+        path = os.path.join(CommonArguments._package_path('tmp', package))
         parser.add_argument(
             *name_or_flags,
             help='Process working tmp directory (default: %(default)s)',

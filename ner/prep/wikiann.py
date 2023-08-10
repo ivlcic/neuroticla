@@ -4,13 +4,13 @@ import logging
 logger = logging.getLogger('ner.prep.wikiann')
 
 
-def filter_wikiann(lang: str, proc_fname: str) -> None:
+def clean(args) -> None:
     data = ''
     invalid = {"''", "'", "]]", "[[", "==", "**", "``"}
     counter = 0
     sent_id = 0
-    prefix = lang + ':'
-    with open(os.path.join(proc_fname), 'rt', encoding='utf-8') as fp:
+    prefix = args.lang + ':'
+    with open(os.path.join(args.process_file_name), 'rt', encoding='utf-8') as fp:
         line = 'whatever'
         while line:
             line = fp.readline()
@@ -44,5 +44,20 @@ def filter_wikiann(lang: str, proc_fname: str) -> None:
             data += str(counter) + '\t' + tokens[0] + '\t' + tokens[1]
             counter += 1
 
-    with open(os.path.join(proc_fname), 'wt', encoding='utf-8') as fp:
+    with open(os.path.join(args.process_file_name), 'wt', encoding='utf-8') as fp:
         fp.write(data)
+
+
+def default_conf(args):
+    conf = {
+        'type': 'wikiann',
+        'lang': args.lang,
+        'zip': args.lang + '-wann.zip',
+        'proc_file': args.lang + '_wann',
+        'result_name': args.lang + '_wann',
+        'ner_conll_idx': 2,
+        'map_filter': {
+            'max_seq_len': 128
+        }
+    }
+    return conf

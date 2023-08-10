@@ -1,14 +1,25 @@
 import os
 import json
 import re
-import zipfile
 import shutil
 import logging
 
+import neuroticla.labels
+import neuroticla.zip
+
 from typing import Dict, List, Any, Callable
 from io import StringIO
+from stanza.utils.conll import CoNLL
 
 logger = logging.getLogger('ner.prep.conll')
+
+
+def to_conll(doc):
+    if hasattr(doc, "to_conll"):
+        return doc.to_conll()
+    else:
+        # noinspection PyStringFormat
+        return "{:C}\n\n".format(doc)
 
 
 def map_ner(map_filter: Dict, ner: str) -> str:
@@ -67,22 +78,21 @@ def parse_mwt_token(r: str) -> List[str]:
     return result
 
 
-def conll2csv(conll_path: str, base_name: str, append: bool, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
+def to_csv(args, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
     if map_filter is None:
         map_filter = {}
 
     labeler = neuroticla.labels.Labeler(
-        # TODO
-        os.path.join(args.data_in_dir, 'tags.csv')
+        os.path.join(args.data_out_dir, 'tags.csv')
     )
 
-    csv_fname = base_name + '.csv'
-    json_fname = base_name + '.json'
-    conll_fname = base_name + '.conll'
-    csv = open(csv_fname, "a" if append else "w")
+    csv_fname = os.path.join(args.data_out_dir, args.target_base_name) + '.csv'
+    json_fname = os.path.join(args.data_out_dir, args.target_base_name) + '.json'
+    conll_fname = os.path.join(args.data_out_dir, args.target_base_name) + '.conll'
+    csv = open(csv_fname, "a" if args.append else "w")
     csv.write('sentence,ner\n')
-    logger.debug('Loading data [%s]', conll_path)
-    logger.debug('Reformatting data NER [%s -> %s]...', conll_path, csv_fname)
+    logger.debug('Loading data [%s]', args.process_file_name)
+    logger.debug('Reformatting data NER [%s -> %s]...', args.process_file_name, csv_fname)
     stats = {
         'tags': {
             'NER': 0, 'PER': 0, 'LOC': 0, 'ORG': 0, 'MISC': 0
@@ -97,7 +107,7 @@ def conll2csv(conll_path: str, base_name: str, append: bool, ner_tag_idx: int, m
     sentence = {'id': None, 'tokens': [], 'text': ''}
     max_seq_len = map_filter.get('max_seq_len', 128)
     stop_at = map_filter.get('stop_at', -1)
-    with open(conll_path) as fp:
+    with open(args.process_file_name) as fp:
         line = 'whatever'
         while line:
             line = fp.readline()
@@ -155,7 +165,7 @@ def conll2csv(conll_path: str, base_name: str, append: bool, ner_tag_idx: int, m
                 csv.write(' '.join(ner_tags))
                 csv.write("\n")
                 add_seq_to_stats(stats, ner_tags, sentence['id'], sentence['text'])
-                if stop_at > 0 and stats['num_sent'] >= stop_at:
+                if 0 < stop_at <= stats['num_sent']:
                     logger.info("Forcefully stopping at sentence [%s]", stop_at)
                     break
                 sentence = {'id': None, 'tokens': [], 'text': ''}
@@ -163,12 +173,27 @@ def conll2csv(conll_path: str, base_name: str, append: bool, ner_tag_idx: int, m
             data = line.split('\t')
             sentence['tokens'].append(data)
 
-    logger.info('Reformatted data [%s -> %s]', conll_path, csv_fname)
+    logger.info('Reformatted data [%s -> %s]', args.process_file_name, csv_fname)
     logger.info('Reformatting stats: %s', stats)
     with open(json_fname, 'w') as outfile:
         json.dump(stats, outfile, indent=2)
     csv.close()
-    shutil.copyfile(conll_path, conll_fname)
-    with zipfile.ZipFile(conll_fname + '.zip', 'w', compression=zipfile.ZIP_BZIP2, compresslevel=9) as myzip:
-        myzip.write(conll_fname)
+    shutil.copyfile(args.process_file_name, conll_fname)
+    with neuroticla.zip.ZipFile(
+            os.path.join(args.data_out_dir, args.lang + '.zip'), 'a',
+            compression=neuroticla.zip.ZIP_BZIP2, compresslevel=9
+    ) as myzip:
+        names = myzip.namelist()
+        if args.target_base_name + '.conll' in names:
+            myzip.remove(args.target_base_name + '.conll')
+        if args.target_base_name + '.json' in names:
+            myzip.remove(args.target_base_name + '.json')
+        if args.target_base_name + '.csv' in names:
+            myzip.remove(args.target_base_name + '.csv')
+        myzip.write(conll_fname, args.target_base_name + '.conll')
+        myzip.write(json_fname, args.target_base_name + '.json')
+        myzip.write(csv_fname, args.target_base_name + '.csv')
         myzip.close()
+    os.remove(conll_fname)
+    os.remove(json_fname)
+    os.remove(csv_fname)

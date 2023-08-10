@@ -1,9 +1,11 @@
 import os
 
+from typing import Dict, List, Union
+
 
 class Labeler:
 
-    def __init__(self, file_name: str = None, labels: List = None, replace_labels: Dict[str, str] = None):
+    def __init__(self, file_name: str = None, labels: List[str] = None, replace_labels: Dict[str, str] = None):
         if replace_labels is None:
             replace_labels = {}
         if labels is None:

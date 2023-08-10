@@ -1,6 +1,8 @@
 import os
 import re
 import logging
+import ner.prep.conll
+import ner.prep.tokens
 
 from typing import Dict, Any, Callable
 from io import StringIO
@@ -93,7 +95,7 @@ def bsnlp_process_raw_record(record: Dict, map_filter: Dict):
                         token_list[j]._ner = 'I-' + ner_tag['tag']
     if count == 0 and len(record['a_ner_t']) > 0:
         logger.warning('No NER matched in [%s] with annotations in [%s]!', record['r_fname'], record['a_fname'])
-    record['conll'] = '# new_doc_id = ' + record['topic'] + '-' + record['id'] + '\n' + nf.data.to_conll(doc)
+    record['conll'] = '# new_doc_id = ' + record['topic'] + '-' + record['id'] + '\n' + ner.prep.conll.to_conll(doc)
 
 
 def bsnlp_create_records(bsnlp_path: str, lang: str, map_filter: Dict = None) -> Dict[str, Dict[str, Any]]:
@@ -147,18 +149,40 @@ def bsnlp_create_records(bsnlp_path: str, lang: str, map_filter: Dict = None) ->
     return anno_records
 
 
-def bsnlp2csv(bsnlp_path: str, base_name: str, append: bool, map_filter: Dict = None):
+def to_csv(args, map_filter: Dict = None):
     if map_filter is None:
         map_filter = {}
-    lang = map_filter.get('lang')
-    if lang is None:
-        raise ValueError('Missing map_filter lang parameter!')
     conll_fname = os.path.join('tmp', 'out.conll')
-
-    anno_records = bsnlp_create_records(bsnlp_path, lang, map_filter)
-    conll = open(conll_fname, "a" if append else "w")
+    anno_records = bsnlp_create_records(args.process_file_name, args.lang, map_filter)
+    conll_fp = open(conll_fname, "a" if args.append else "w")
     for k, record in anno_records.items():
-        conll.write(record['conll'])
-    conll.close()
-    logger.info('Reformatted data [%s -> %s]', bsnlp_path, conll_fname)
-    conll2csv(conll_fname, base_name, append, 9, map_filter)
+        conll_fp.write(record['conll'])
+    conll_fp.close()
+    logger.info('Reformatted data [%s -> %s]', args.process_file_name, conll_fname)
+    args.process_file_name = conll_fname
+    ner.prep.conll.to_csv(args, 9, map_filter)
+
+
+def default_conf(args):
+    obeliks_set = {'sl'}
+    reldi_set = {'hr', 'sr', 'bs', 'mk', 'bg'}
+    if args.lang in obeliks_set:
+        tokenizer = ner.prep.tokens.get_obeliks_tokenizer(args)
+    elif args.lang in reldi_set:
+        tokenizer = ner.prep.tokens.get_reldi_tokenizer(args)
+    else:
+        tokenizer = ner.prep.tokens.get_stanza_tokenizer(args)
+    conf = {
+        'type': 'bsnlp',
+        'zip': 'bsnlp-2017-21.zip',
+        'proc_file': 'bsnlp',
+        'result_name': args.lang + '_bsnlp',
+        'map_filter': {
+            'max_seq_len': 128,
+            'lang': args.lang,
+            'tokenizer': tokenizer,
+            'B-EVT': 'B-MISC', 'I-EVT': 'I-MISC',
+            'B-PRO': 'B-MISC', 'I-PRO': 'I-MISC'
+        }
+    }
+    return conf
