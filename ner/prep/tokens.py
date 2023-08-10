@@ -12,18 +12,8 @@ def get_stanza_tokenizer(args):
     return stanza.Pipeline(args.lang, dir=stanza_dir, processors="tokenize", download_method=2)
 
 
-def get_classla_tokenizer(lang: str):
-    if lang == 'sl':
-        pass
-    else:
-        pass
-
-
-def get_obeliks_tokenizer(lang: str):
-    if lang == 'sl':
-        pass
-    else:
-        pass
+def get_obeliks_tokenizer():
+    return obeliks.run
 
 
 def get_reldi_tokenizer(lang: str):

@@ -7,6 +7,7 @@ NRCLA_MODULE = ModuleDescriptor(
     'Named Entity Recognition neural network module',
     ModuleArguments({
         CommandArguments('prep', 'Prepares the data'),
-        CommandArguments('split', 'Splits the data')
+        CommandArguments('split', 'Splits the data'),
+        CommandArguments('test', 'Internal tests')
     })
 )
