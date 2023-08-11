@@ -51,15 +51,26 @@ class ExecModule:
         logger.debug('Loading package: [%s]', package)
         py_module = importlib.import_module(package)
         logger.debug('Imported package: [%s]', package)
-        m: ExecModule = ExecModule(py_module.NRCLA_MODULE)
+        m: ExecModule = ExecModule(py_module)
         logger.info('Loaded module: [%s]', package)
         return m
 
-    def __init__(self, descriptor: ModuleDescriptor):
-        self._descr = descriptor
+    def __init__(self, py_module):
+        self._py_module = py_module
+        self._descr: ModuleDescriptor = py_module.NRCLA_MODULE
 
     def execute(self) -> int:
         module_args: ModuleArguments = self._descr.get_args()
         parser: ArgumentParser = module_args.get_parser()
         args = parser.parse_args()
+        pym_name = self._descr.get_name() + '.' + args.action
+        logger.debug('Loading Python module: [%s]', pym_name)
+        py_module = importlib.import_module(pym_name)
+
+        if args.action == 'test':
+            fn = getattr(py_module, 'test_' + args.test, None)
+            args.func = fn
+        else:
+            args.func = py_module.main
+
         args.func(args)

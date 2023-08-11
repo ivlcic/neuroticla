@@ -178,7 +178,7 @@ def default_conf(args):
         'proc_file': 'bsnlp',
         'result_name': args.lang + '_bsnlp',
         'map_filter': {
-            'max_seq_len': 128,
+            'max_seq_len': 256,
             'lang': args.lang,
             'tokenizer': tokenizer,
             'B-EVT': 'B-MISC', 'I-EVT': 'I-MISC',

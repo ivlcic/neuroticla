@@ -124,8 +124,8 @@ def main(args) -> int:
                 'result_name': args.lang + '_500k',
                 'ner_conll_idx': 9,
                 'map_filter': {
-                    'max_seq_len': 128,
-                    'stop_at': 9483,
+                    'max_seq_len': 256,
+                    # 'stop_at': 9483,
                     'lang': args.lang,
                     'B-loc': 'B-LOC', 'I-loc': 'I-LOC',
                     'B-org': 'B-ORG', 'I-org': 'I-ORG',
@@ -141,7 +141,7 @@ def main(args) -> int:
                 'result_name': args.lang + '_scr',
                 'ner_conll_idx': 9,
                 'map_filter': {
-                    'max_seq_len': 128,
+                    'max_seq_len': 256,
                     'lang': args.lang,
                     'B-loc': 'B-LOC', 'I-loc': 'I-LOC',
                     'B-org': 'B-ORG', 'I-org': 'I-ORG',
@@ -157,7 +157,7 @@ def main(args) -> int:
                 'result_name': args.lang + '_ewsd',
                 'ner_conll_idx': 9,
                 'map_filter': {
-                    'max_seq_len': 128,
+                    'max_seq_len': 256,
                     'lang': args.lang,
                     'B-loc': 'B-LOC', 'I-loc': 'I-LOC',
                     'B-org': 'B-ORG', 'I-org': 'I-ORG',
@@ -179,7 +179,7 @@ def main(args) -> int:
                 'result_name': args.lang + '_500k',
                 'ner_conll_idx': 10,
                 'map_filter': {
-                    'max_seq_len': 128,
+                    'max_seq_len': 256,
                     'lang': args.lang,
                     'B-loc': 'B-LOC', 'I-loc': 'I-LOC',
                     'B-org': 'B-ORG', 'I-org': 'I-ORG',
@@ -200,7 +200,7 @@ def main(args) -> int:
                 'result_name': args.lang + '_set',
                 'ner_conll_idx': 10,
                 'map_filter': {
-                    'max_seq_len': 128,
+                    'max_seq_len': 256,
                     'lang': args.lang,
                     'B-loc': 'B-LOC', 'I-loc': 'I-LOC',
                     'B-org': 'B-ORG', 'I-org': 'I-ORG',
@@ -220,7 +220,7 @@ def main(args) -> int:
                 'result_name': args.lang + '_cnec',
                 'ner_conll_idx': 2,
                 'map_filter': {
-                    'max_seq_len': 128,
+                    'max_seq_len': 256,
                     'lang': args.lang,
                     'B-G': 'B-LOC', 'I-G': 'I-LOC',
                     'B-I': 'B-ORG', 'I-I': 'I-ORG',

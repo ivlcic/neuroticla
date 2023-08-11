@@ -57,8 +57,8 @@ def add_seq_to_stats(stats: Dict, seq: List, sentence_id: str, sentence: str) ->
         seq_len_cls['128'] = seq_len_cls['128'] + 1
     elif seq_len <= 256:
         seq_len_cls['256'] = seq_len_cls['256'] + 1
-        logger.info('Found sequence longer than 128 tokens! Manual check needed at sentence id [%s][%s]!',
-                    sentence_id, sentence)
+        # logger.info('Found sequence longer than 128 tokens! Manual check needed at sentence id [%s][%s]!',
+        #            sentence_id, sentence)
     elif seq_len <= 512:
         seq_len_cls['512'] = seq_len_cls['512'] + 1
         logger.info('Found sequence longer than 256 tokens! Manual check needed at sentence id [%s][%s]!',

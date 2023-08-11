@@ -3,6 +3,7 @@ import logging
 import argparse
 import importlib
 import textwrap
+import copy
 
 from typing import List, Tuple
 from argparse import ArgumentParser
@@ -37,17 +38,28 @@ class ModuleArguments:
             title='Select the module action', help='Help', dest='action', metavar='action', required=True
         )
         for x in self._commands:
-            pym_name = package + '.' + x.get_name()
+            cmd_name = x.get_name()
+            pym_name = package + '.' + cmd_name
             logger.debug('Loading Python module: [%s]', pym_name)
             py_module = importlib.import_module(pym_name)
             logger.debug('Loaded Python module: [%s]', pym_name)
+
             subparser = self._actions.add_parser(
-                x.get_name(),
+                cmd_name,
                 help=x.get_description(),
                 formatter_class=argparse.RawTextHelpFormatter
             )
+
+            if cmd_name == 'test':
+                tests = []
+                for n in dir(py_module):
+                    if n.startswith('test_'):
+                        tests.append(n[5:])
+                subparser.add_argument(
+                    'test', help='Test function to invoke', choices=tests
+                )
+
             py_module.args(package, subparser)
-            subparser.set_defaults(func=py_module.main)
             logger.debug('Setting up arguments for [%s]', pym_name)
 
     def get_parser(self) -> ArgumentParser:
