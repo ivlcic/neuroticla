@@ -2,14 +2,16 @@ import logging
 import os
 import zipfile
 
-import ner.prep.conll
-import ner.prep.cnec
-import ner.prep.wikiann
-import ner.prep.bsnlp
+from .bsnlp import default_conf as bsnlp_default_conf
+from .bsnlp import to_csv as bsnlp_to_csv
+from .conll import to_csv as conll_to_csv
+from .wikiann import default_conf as wikiann_default_conf
+from .wikiann import clean as wikiann_clean
+from .cnec import clean as cnec_clean
 
 from argparse import ArgumentParser
 from typing import Dict, List, Any
-from neuroticla.args import CommonArguments
+from neuroticla.core.args import CommonArguments
 
 logger = logging.getLogger('ner.prep')
 
@@ -61,8 +63,8 @@ def prep_data(args, confs: List[Dict]) -> None:
                 args, conf, ['train', 'dev', 'test', 'extra'], '-wann.conll'
             )
             args.target_base_name = target_base_name
-            ner.prep.wikiann.clean(args)
-            ner.prep.conll.to_csv(args, ner_conll_idx, map_filter)
+            wikiann_clean(args)
+            conll_to_csv(args, ner_conll_idx, map_filter)
         if conf_type == 'cnec':
             ner_conll_idx = check_param(conf, 'ner_conll_idx')
             target_base_name = check_param(conf, 'result_name')
@@ -73,8 +75,8 @@ def prep_data(args, confs: List[Dict]) -> None:
                 args, conf, ['dtest.conll', 'train.conll', 'etest.conll'], '-cnec.conll'
             )
             args.target_base_name = target_base_name
-            ner.prep.cnec.clean(args)
-            ner.prep.conll.to_csv(args, ner_conll_idx, map_filter)
+            cnec_clean(args)
+            conll_to_csv(args, ner_conll_idx, map_filter)
         if conf_type == 'conll':
             zip_fname = check_dir_param(conf, 'zip', args.data_in_dir)
             zipfile.ZipFile(zip_fname).extractall(args.tmp_dir)
@@ -85,7 +87,7 @@ def prep_data(args, confs: List[Dict]) -> None:
             ner_conll_idx = check_param(conf, 'ner_conll_idx')
             args.process_file_name = proc_fname
             args.target_base_name = target_base_name
-            ner.prep.conll.to_csv(args, ner_conll_idx, map_filter)
+            conll_to_csv(args, ner_conll_idx, map_filter)
             logger.info('Converted data [%s -> %s]', proc_fname, target_base_name)
         if conf_type == 'bsnlp':
             zip_fname = check_dir_param(conf, 'zip', args.data_in_dir)
@@ -96,7 +98,7 @@ def prep_data(args, confs: List[Dict]) -> None:
             logger.debug('Converting BSNLP data [%s -> %s]...', proc_fname, target_base_name)
             args.process_file_name = proc_fname
             args.target_base_name = target_base_name
-            ner.prep.bsnlp.to_csv(args, map_filter)
+            bsnlp_to_csv(args, map_filter)
             logger.info('Converted data [%s -> %s]', proc_fname, target_base_name)
 
 
@@ -166,7 +168,7 @@ def main(args) -> int:
                     'B-deriv-per': 'B-PER', 'I-deriv-per': 'I-PER'
                 }
             },
-            ner.prep.bsnlp.default_conf(args)
+            bsnlp_default_conf(args)
         ]
         prep_data(args, confs)
         # nf.data.multi_split_data(args, confs)
@@ -188,7 +190,7 @@ def main(args) -> int:
                     'B-deriv-per': 'B-PER', 'I-deriv-per': 'I-PER'
                 }
             },
-            ner.prep.bsnlp.default_conf(args)
+            bsnlp_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'sr':
@@ -231,48 +233,48 @@ def main(args) -> int:
                     'B-A': 'O', 'I-A': 'O'
                 }
             },
-            ner.prep.bsnlp.default_conf(args)
+            bsnlp_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'bg':
         confs = [
-            ner.prep.bsnlp.default_conf(args)
+            bsnlp_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'ru':
         confs = [
-            ner.prep.bsnlp.default_conf(args)
+            bsnlp_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'pl':
         confs = [
-            ner.prep.bsnlp.default_conf(args)
+            bsnlp_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'sk':
         confs = [
-            ner.prep.bsnlp.default_conf(args),
-            ner.prep.wikiann.default_conf(args)
+            bsnlp_default_conf(args),
+            wikiann_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'uk':
         confs = [
-            ner.prep.bsnlp.default_conf(args)
+            bsnlp_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'bs':
         confs = [
-            ner.prep.wikiann.default_conf(args)
+            wikiann_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'mk':
         confs = [
-            ner.prep.wikiann.default_conf(args)
+            wikiann_default_conf(args)
         ]
         prep_data(args, confs)
     if args.lang == 'sq':
         confs = [
-            ner.prep.wikiann.default_conf(args)
+            wikiann_default_conf(args)
         ]
         prep_data(args, confs)
     return 0

@@ -4,8 +4,8 @@ import re
 import shutil
 import logging
 
-import neuroticla.labels
-import neuroticla.zip
+import neuroticla.core.labels
+import neuroticla.utils.zip
 
 from typing import Dict, List, Any, Callable
 from io import StringIO
@@ -82,7 +82,7 @@ def to_csv(args, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
     if map_filter is None:
         map_filter = {}
 
-    labeler = neuroticla.labels.Labeler(
+    labeler = neuroticla.core.labels.Labeler(
         os.path.join(args.data_out_dir, 'tags.csv')
     )
 
@@ -179,10 +179,13 @@ def to_csv(args, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
         json.dump(stats, outfile, indent=2)
     csv.close()
     shutil.copyfile(args.process_file_name, conll_fname)
-    with neuroticla.zip.ZipFile(
-            os.path.join(args.data_out_dir, args.lang + '.zip'), 'a',
-            compression=neuroticla.zip.ZIP_BZIP2, compresslevel=9
+    with neuroticla.utils.zip.AESZipFile(
+        os.path.join(args.data_out_dir, args.lang + '.zip'), 'a',
+        compression=neuroticla.utils.zip.ZIP_BZIP2,
+        compresslevel=9
     ) as myzip:
+        myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
+        myzip.setpassword(b'showeffort')  # intentional
         names = myzip.namelist()
         if args.target_base_name + '.conll' in names:
             myzip.remove(args.target_base_name + '.conll')

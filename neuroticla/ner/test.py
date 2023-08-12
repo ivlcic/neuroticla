@@ -1,14 +1,14 @@
 import logging
 import sys
-import ner.prep.tokens
+import neuroticla.ner.prep.tokens
 
 from argparse import ArgumentParser
-from neuroticla.args import CommonArguments
+from neuroticla.core.args import CommonArguments
 
 logger = logging.getLogger('ner.test')
 
 
-def args(package: str, parser: ArgumentParser) -> None:
+def args(nrcla_module: str, parser: ArgumentParser) -> None:
     pass
 
 

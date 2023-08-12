@@ -1,11 +1,13 @@
 import os
 import re
 import logging
-import ner.prep.conll
-import ner.prep.tokens
 
 from typing import Dict, Any, Callable
 from io import StringIO
+
+from .conll import to_csv as conll_to_csv
+from .conll import to_conll
+from .tokens import get_obeliks_tokenizer, get_reldi_tokenizer, get_stanza_tokenizer
 
 logger = logging.getLogger('ner.prep.bsnlp')
 
@@ -95,7 +97,7 @@ def bsnlp_process_raw_record(record: Dict, map_filter: Dict):
                         token_list[j]._ner = 'I-' + ner_tag['tag']
     if count == 0 and len(record['a_ner_t']) > 0:
         logger.warning('No NER matched in [%s] with annotations in [%s]!', record['r_fname'], record['a_fname'])
-    record['conll'] = '# new_doc_id = ' + record['topic'] + '-' + record['id'] + '\n' + ner.prep.conll.to_conll(doc)
+    record['conll'] = '# new_doc_id = ' + record['topic'] + '-' + record['id'] + '\n' + to_conll(doc)
 
 
 def bsnlp_create_records(bsnlp_path: str, lang: str, map_filter: Dict = None) -> Dict[str, Dict[str, Any]]:
@@ -160,18 +162,18 @@ def to_csv(args, map_filter: Dict = None):
     conll_fp.close()
     logger.info('Reformatted data [%s -> %s]', args.process_file_name, conll_fname)
     args.process_file_name = conll_fname
-    ner.prep.conll.to_csv(args, 9, map_filter)
+    conll_to_csv(args, 9, map_filter)
 
 
 def default_conf(args):
     obeliks_set = {'sl'}
     reldi_set = {'hr', 'sr', 'bs', 'mk', 'bg'}
     if args.lang in obeliks_set:
-        tokenizer = ner.prep.tokens.get_obeliks_tokenizer(args)
+        tokenizer = get_obeliks_tokenizer(args)
     elif args.lang in reldi_set:
-        tokenizer = ner.prep.tokens.get_reldi_tokenizer(args)
+        tokenizer = get_reldi_tokenizer(args)
     else:
-        tokenizer = ner.prep.tokens.get_stanza_tokenizer(args)
+        tokenizer = get_stanza_tokenizer(args)
     conf = {
         'type': 'bsnlp',
         'zip': 'bsnlp-2017-21.zip',

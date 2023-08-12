@@ -1,12 +1,12 @@
 import logging
 
 from argparse import ArgumentParser
-from neuroticla.args import CommonArguments
+from neuroticla.core.args import CommonArguments
 
 logger = logging.getLogger('nf.split')
 
 
-def args(package: str, parser: ArgumentParser) -> None:
+def args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.data_split(parser)
 
 

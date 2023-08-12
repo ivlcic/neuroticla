@@ -30,7 +30,7 @@ class ModuleArguments:
         self._actions = None
         self._parser = None
 
-    def init_parser(self, package: str, description: str):
+    def init_parser(self, project: str, nrcla_module: str, description: str):
         self._parser = argparse.ArgumentParser(
                 description=description
             )
@@ -39,7 +39,7 @@ class ModuleArguments:
         )
         for x in self._commands:
             cmd_name = x.get_name()
-            pym_name = package + '.' + cmd_name
+            pym_name = project + '.' + nrcla_module + '.' + cmd_name
             logger.debug('Loading Python module: [%s]', pym_name)
             py_module = importlib.import_module(pym_name)
             logger.debug('Loaded Python module: [%s]', pym_name)
@@ -58,8 +58,7 @@ class ModuleArguments:
                 subparser.add_argument(
                     'test', help='Test function to invoke', choices=tests
                 )
-
-            py_module.args(package, subparser)
+            py_module.args(nrcla_module, subparser)
             logger.debug('Setting up arguments for [%s]', pym_name)
 
     def get_parser(self) -> ArgumentParser:
@@ -92,7 +91,7 @@ class CommonArguments:
 
     @classmethod
     def _package_path(cls, path_type: str, package: str) -> str:
-        path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         return os.path.join(path, path_type, package)
 
     @classmethod

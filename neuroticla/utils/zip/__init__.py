@@ -16,6 +16,14 @@ import threading
 
 from operator import attrgetter
 
+
+from Cryptodome.Protocol.KDF import PBKDF2
+from Cryptodome.Cipher import AES
+from Cryptodome.Hash import HMAC
+from Cryptodome.Hash.SHA1 import SHA1Hash
+from Cryptodome.Util import Counter
+from Cryptodome import Random
+
 if sys.version_info[0:2] < (3, 6):
     import pathlib
 
