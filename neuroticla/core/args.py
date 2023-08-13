@@ -8,7 +8,7 @@ import copy
 from typing import List, Tuple
 from argparse import ArgumentParser
 
-logger = logging.getLogger('neuroticla.args')
+logger = logging.getLogger('neuroticla.core.args')
 
 
 class CommandArguments:

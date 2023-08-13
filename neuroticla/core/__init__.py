@@ -20,7 +20,7 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S')
 logging.getLogger().addFilter(fmt_filter)
-logger = logging.getLogger('neuroticla')
+logger = logging.getLogger('neuroticla.core')
 
 
 class ModuleDescriptor:

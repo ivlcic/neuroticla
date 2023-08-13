@@ -1,0 +1,127 @@
+import torch
+import logging
+
+from typing import List, Dict
+from transformers import PreTrainedTokenizer, BatchEncoding
+from tokenizers.tokenizers import Encoding
+
+from .labels import Labeler
+
+logger = logging.getLogger('neuroticla.core.dataset')
+
+
+class ClassifyDataset(torch.utils.data.Dataset):
+    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, max_seq_len: int,
+                 label_field: str = 'label', text_field: str = 'text'):
+        self._labeler = labeler
+        self._tokenizer = tokenizer
+        self._max_seq_len = max_seq_len
+        self._label_field = label_field
+        self._text_field = text_field
+
+    def __getitem__(self, index):
+        return None
+
+
+class TokenClassifyDataset(ClassifyDataset):
+
+    def align_labels(self, encoded: Encoding, labels: List[str]):
+        word_ids = encoded.word_ids
+        label_ids = []
+        max_idx = len(labels)
+        for word_idx in word_ids:
+            if word_idx is None:
+                label_ids.append(-100)
+            elif word_idx < 0 or word_idx >= max_idx:
+                label_ids.append(-100)
+            else:
+                label_ids.append(self._labeler.label2id(labels[word_idx]))
+        return label_ids
+
+    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame,
+                 max_seq_len: int, label_field: str = 'label', text_field: str = 'text'):
+        """Encodes the text data and labels
+        """
+        super().__init__(labeler, tokenizer, max_seq_len, label_field, text_field)
+
+        ds_labels = [self._labeler.filter_replace(line).split() for line in data[label_field].values.tolist()]
+
+        # check if labels in the dataset are also in labeler
+        true_labels = self._labeler.kept_labels()
+        unique_labels = set()
+        for lb in ds_labels:
+            [unique_labels.add(i) for i in lb if i not in unique_labels]
+        if unique_labels != true_labels:
+            logger.warning("Unexpected label [%s] in [%s] in dataset!",
+                         unique_labels, true_labels)
+            #exit(1)
+
+        # encode the text
+        texts = data[text_field].values.tolist()
+        self.encodings: BatchEncoding = tokenizer(
+            texts, padding='max_length', max_length=max_seq_len, truncation=True, return_tensors="pt"
+        )
+        # encode the labels
+        self.labels = []
+        for i, e in enumerate(self.encodings.encodings):
+            self.labels.append(self.align_labels(e, ds_labels[i]))
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        """
+        self.encodings = {
+          'input_ids':[dataset_size, [encoded ids vector]]
+          'attention_mask':[dataset_size, [attention mask - padded tokens]]
+        }
+        so we need to take only the "idx" one
+        item = {
+          'input_ids':[encoded ids vector for idx]
+          'attention_mask':[attention mask - padded tokens for idx]
+        }
+        """
+        item = {key: val[idx].clone().detach() for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
+
+
+class SeqClassifyDataset(ClassifyDataset):
+
+    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame,
+                 max_seq_len: int, label_field: str = 'label', text_field: str = 'text'):
+        """Encodes the text data and labels
+                """
+        super().__init__(labeler, tokenizer, max_seq_len, label_field, text_field)
+        # encode the text
+        texts = data[text_field].values.tolist()
+        self.encodings: BatchEncoding = tokenizer(
+            texts,
+            padding='max_length',
+            max_length=max_seq_len,
+            truncation=True,
+            return_tensors="pt"
+        )
+        # encode the labels
+        self.labels = []
+        for label in data[label_field].values.tolist():
+            self.labels.append(label)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        """
+        self.encodings = {
+          'input_ids':[dataset_size, [encoded ids vector]]
+          'attention_mask':[dataset_size, [attention mask - padded tokens]]
+        }
+        so we need to take only the "idx" one
+        item = {
+          'input_ids':[encoded ids vector for idx]
+          'attention_mask':[attention mask - padded tokens for idx]
+        }
+        """
+        item = {key: val[idx].clone().detach() for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
