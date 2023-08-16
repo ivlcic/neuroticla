@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-from neuroticla import ExecModule
+from neuroticla.core import ExecModule
 
 
 if __name__ == "__main__":
