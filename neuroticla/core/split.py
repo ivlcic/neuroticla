@@ -1,6 +1,9 @@
+import os
+import logging
+import numpy as np
 import pandas as pd
 
-
+from typing import Dict, List
 logger = logging.getLogger('neuroticla.core.split')
 
 
@@ -61,7 +64,7 @@ class DataSplit:
         test_sets: List[pd.DataFrame] = []
         for conf in confs:
             # target_base_name = nf.args.chech_param(conf, 'result_name')
-            training_data, evaluation_data, test_data = split_data(args, target_base_name)
+            training_data, evaluation_data, test_data = cls.split_data(args, target_base_name)
             training_sets.append(training_data)
             evaluation_sets.append(evaluation_data)
             test_sets.append(test_data)

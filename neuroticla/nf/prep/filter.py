@@ -1,6 +1,12 @@
+import re
+import os
+import logging
 import pandas as pd
 
-from typing import Dict, List
+from typing import Dict, List, Union, Any
+
+
+logger = logging.getLogger('nf.prep.filter')
 
 
 class DataFilter:
@@ -20,7 +26,7 @@ class DataFilter:
         super().__init__()
         self.args = args
         self.num_rows = args.num_rows
-        self.df: pd.DataFrame = None
+        self.df: Union[pd.DataFrame, Any] = None
 
     def type_mapping(self) -> Dict[str, str]:
         return {}
@@ -47,7 +53,8 @@ class DataFilter:
         )
         nm = self.name_mapping()
         if nm:
-            df.rename(columns=nm, inplace=True)
+            self.df.rename(columns=nm, inplace=True)
+        logger.info("Got CVS columns after first filtering: %s", self.df.columns)
 
     def filter(self) -> None:
         for i, row in self.df.iterrows():
@@ -56,6 +63,8 @@ class DataFilter:
             lead: str = DataFilter.cleanup_text(self.df.at[i, 'lead'])
             if body.startswith(title):
                 body = body[len(title):]
+            if lead.startswith(title):
+                lead = lead[len(title):]
             self.df.at[i, 'body'] = body
             self.df.at[i, 'title'] = title
             self.df.at[i, 'lead'] = lead

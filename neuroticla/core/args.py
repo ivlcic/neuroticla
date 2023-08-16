@@ -1,14 +1,13 @@
-import os
-import logging
 import argparse
 import importlib
+import logging
+import os
 import textwrap
-import copy
 
-from typing import List, Tuple
 from argparse import ArgumentParser
+from typing import List, Tuple
 
-logger = logging.getLogger('neuroticla.core.args')
+logger = logging.getLogger('core.args')
 
 
 class CommandArguments:

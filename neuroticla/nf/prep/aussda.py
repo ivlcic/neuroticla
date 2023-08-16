@@ -26,6 +26,9 @@ class AussdaDataFilter(DataFilter):
             'text': 'body',
         }
 
+    def skip_rows(self, row) -> bool:
+        return False
+
     def include_cols(self) -> List[str]:
         return [
             'headline', 'lead_paragraph', 'text', 'publication_date', 'country', 'source'
@@ -37,13 +40,6 @@ class AussdaLongDataFilter(AussdaDataFilter):
     # Corpus B covers seven countries and 39 media outlets from 2013 to 2017
     def __init__(self, args) -> None:
         super().__init__(args)
-
-    def include_cols(self) -> List[str]:
-        cols = super().include_cols()
-        cols.extend([
-            'ID', 'fr_eco', 'fr_lab', 'fr_wel', 'fr_sec', 'fr_cul', 'filter_corpus_A', 'filter_corpus_A'
-        ])
-        return cols
 
     def type_mapping(self) -> Dict[str, str]:
         tm = super().type_mapping()
@@ -69,6 +65,16 @@ class AussdaLongDataFilter(AussdaDataFilter):
         nm['fr_cul'] = 'cul'
         return nm
 
+    def skip_rows(self, row) -> bool:
+        return False
+
+    def include_cols(self) -> List[str]:
+        cols = super().include_cols()
+        cols.extend([
+            'ID', 'fr_eco', 'fr_lab', 'fr_wel', 'fr_sec', 'fr_cul', 'filter_corpus_A', 'filter_corpus_A'
+        ])
+        return cols
+
 
 class AussdaShortDataFilter(AussdaDataFilter):
     # Corpus B covers seven countries and 39 media outlets from 2013 to 2017
@@ -79,13 +85,6 @@ class AussdaShortDataFilter(AussdaDataFilter):
 class AussdaManualDataFilter(AussdaDataFilter):
     def __init__(self, args) -> None:
         super().__init__(args)
-
-    def include_cols(self) -> List[str]:
-        cols = super().include_cols()
-        cols.cols.extend([
-            'reminderid_doc_id', 'm_fr_eco', 'm_fr_lab', 'm_fr_wel', 'm_fr_sec'
-        ])
-        return cols
 
     def type_mapping(self) -> Dict[str, str]:
         tm = super().type_mapping()
@@ -104,6 +103,16 @@ class AussdaManualDataFilter(AussdaDataFilter):
         nm['m_fr_wel'] = 'wel'
         nm['m_fr_sec'] = 'sec'
         return nm
+
+    def skip_rows(self, row) -> bool:
+        return False
+
+    def include_cols(self) -> List[str]:
+        cols = super().include_cols()
+        cols.extend([
+            'reminderid_doc_id', 'm_fr_eco', 'm_fr_lab', 'm_fr_wel', 'm_fr_sec'
+        ])
+        return cols
 
 # Spain
 #   Print:  ABC, El Mundo, El Pais

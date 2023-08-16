@@ -1,9 +1,7 @@
 import logging
-import sys
-import neuroticla.ner.prep.tokens
 
 from argparse import ArgumentParser
-from neuroticla.core.args import CommonArguments
+from .prep.tokens import get_obeliks_tokenizer, get_reldi_tokenizer
 
 logger = logging.getLogger('ner.test')
 
@@ -15,11 +13,11 @@ def args(nrcla_module: str, parser: ArgumentParser) -> None:
 def test_tokenizer(args) -> int:
     logger.debug("main")
     args.lang = 'sl'
-    tokenizer = ner.prep.tokens.get_obeliks_tokenizer(args)
+    tokenizer = get_obeliks_tokenizer(args)
     o = tokenizer('Pozdravljen, svet!\n\nAli pa tudi ne. Kaj pa vem?')
-    # print(o.to_conll())
+    logger.info("Got obeliks result: %s", o)
     args.lang = 'hr'
-    tokenizer = ner.prep.tokens.get_reldi_tokenizer(args)
+    tokenizer = get_reldi_tokenizer(args)
     o = tokenizer('Dobrodošao, svijet!\n\nMožda ne. Šta ja znam?')
-    # print(o.to_conll())
+    logger.info("Got reldi result: %s", o)
     return 0

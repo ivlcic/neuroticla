@@ -1,16 +1,19 @@
 import torch
 import logging
+import pandas as pd
 
-from typing import List, Dict
+from typing import List
+
+from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizer, BatchEncoding
 from tokenizers.tokenizers import Encoding
 
 from .labels import Labeler
 
-logger = logging.getLogger('neuroticla.core.dataset')
+logger = logging.getLogger('core.dataset')
 
 
-class ClassifyDataset(torch.utils.data.Dataset):
+class ClassifyDataset(Dataset):
     def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, max_seq_len: int,
                  label_field: str = 'label', text_field: str = 'text'):
         self._labeler = labeler
@@ -52,9 +55,8 @@ class TokenClassifyDataset(ClassifyDataset):
         for lb in ds_labels:
             [unique_labels.add(i) for i in lb if i not in unique_labels]
         if unique_labels != true_labels:
-            logger.warning("Unexpected label [%s] in [%s] in dataset!",
-                         unique_labels, true_labels)
-            #exit(1)
+            logger.warning("Unexpected label [%s] in [%s] in dataset!", unique_labels, true_labels)
+            # exit(1)
 
         # encode the text
         texts = data[text_field].values.tolist()

@@ -1,5 +1,4 @@
 import os
-import re
 import logging
 import pandas as pd
 
@@ -10,23 +9,24 @@ from .filter import DataFilter
 from .aussda import AussdaLongDataFilter, AussdaShortDataFilter, AussdaManualDataFilter
 from .slomcor import SlomcorDataFilter
 
-logger = logging.getLogger('neuroticla.nf.prep')
+logger = logging.getLogger('nf.prep')
 
 
-def get_data_filter(args) -> DataFilter:
+def get_data_filter(arg) -> DataFilter:
     df: pd.DataFrame = pd.read_csv(
-        args.input_path,
+        arg.input_path,
         encoding='utf-8',
         nrows=10
     )
+    logger.info("Got CVS columns after first filtering: %s", df.columns)
     if 'origin_ID' in df:
-        return AussdaLongDataFilter(args)
+        return AussdaLongDataFilter(arg)
     elif 'ID_origin' in df:
-        return AussdaShortDataFilter(args)
+        return AussdaShortDataFilter(arg)
     elif 'reminderid_doc_id' in df:
-        return AussdaManualDataFilter(args)
+        return AussdaManualDataFilter(arg)
     else:
-        return SlomcorDataFilter(args)
+        return SlomcorDataFilter(arg)
 
 
 def args(nrcla_module: str, parser: ArgumentParser) -> None:
@@ -41,15 +41,14 @@ def args(nrcla_module: str, parser: ArgumentParser) -> None:
     )
 
 
-def main(args) -> int:
+def main(arg) -> int:
     logger.debug("Starting data preparation")
-    if not os.path.exists(args.input_file):
-        args.input_path = os.path.join(args.data_in_dir, args.input_file)
+    if not os.path.exists(arg.input_file):
+        arg.input_path = os.path.join(arg.data_in_dir, arg.input_file)
 
-    df: DataFilter = get_data_filter(args)
+    df: DataFilter = get_data_filter(arg)
     df.load()
     df.filter()
     df.save()
-    logger.info("Got CVS columns after first filtering: %s", df.columns)
 
     return 0

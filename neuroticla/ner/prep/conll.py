@@ -1,15 +1,12 @@
-import os
 import json
+import logging
+import os
 import re
 import shutil
-import logging
+from typing import Dict, List, Any
 
 import neuroticla.core.labels
 import neuroticla.utils.zip
-
-from typing import Dict, List, Any, Callable
-from io import StringIO
-from stanza.utils.conll import CoNLL
 
 logger = logging.getLogger('ner.prep.conll')
 

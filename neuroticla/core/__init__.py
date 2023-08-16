@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
-import argparse
 import importlib
 import logging
+import os
 
-from .args import ModuleArguments
+from typing import Self
+
+from .args import ModuleArguments, ArgumentParser
 
 
 def fmt_filter(record):
@@ -27,10 +28,10 @@ class ModuleDescriptor:
 
     project = 'neuroticla'
 
-    def __init__(self, name: str, descr: str, args: ModuleArguments):
+    def __init__(self, name: str, descr: str, arg: ModuleArguments):
         self._name = name
         self._description = descr
-        self._args = args
+        self._args = arg
         self._args.init_parser(
             ModuleDescriptor.project, name, descr
         )
@@ -64,15 +65,15 @@ class ExecModule:
     def execute(self) -> int:
         module_args: ModuleArguments = self._descr.get_args()
         parser: ArgumentParser = module_args.get_parser()
-        args = parser.parse_args()
-        pym_name = ModuleDescriptor.project + '.' + self._descr.get_name() + '.' + args.action
+        arg = parser.parse_args()
+        pym_name = ModuleDescriptor.project + '.' + self._descr.get_name() + '.' + arg.action
         logger.debug('Loading Python module: [%s]', pym_name)
         py_module = importlib.import_module(pym_name)
 
-        if args.action == 'test':
-            fn = getattr(py_module, 'test_' + args.test, None)
-            args.func = fn
+        if arg.action == 'test':
+            fn = getattr(py_module, 'test_' + arg.test, None)
+            arg.func = fn
         else:
-            args.func = py_module.main
+            arg.func = py_module.main
 
-        args.func(args)
+        return arg.func(args)
