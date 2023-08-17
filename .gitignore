@@ -2,4 +2,5 @@
 venv/
 tmp/
 data/nf/raw/*.csv
+data/nf/processed/*.csv
 __pycache__

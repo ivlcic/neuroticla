@@ -18,7 +18,7 @@ def get_data_filter(arg) -> DataFilter:
         encoding='utf-8',
         nrows=10
     )
-    logger.info("Got CVS columns after first filtering: %s", df.columns)
+    logger.info("Got CVS columns after examine: %s", df.columns)
     if 'origin_ID' in df:
         return AussdaLongDataFilter(arg)
     elif 'ID_origin' in df:

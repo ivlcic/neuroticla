@@ -76,4 +76,4 @@ class ExecModule:
         else:
             arg.func = py_module.main
 
-        return arg.func(args)
+        return arg.func(arg)

@@ -1,6 +1,11 @@
-from typing import Dict, List
+import os
+import logging
+import pandas as pd
 
+from typing import Dict, List
 from .filter import DataFilter
+
+logger = logging.getLogger('nf.prep.aussda')
 
 
 class AussdaDataFilter(DataFilter):
@@ -34,6 +39,16 @@ class AussdaDataFilter(DataFilter):
             'headline', 'lead_paragraph', 'text', 'publication_date', 'country', 'source'
         ]
 
+    def required_cols(self) -> List[str]:
+        cols = super().required_cols()
+        cols.extend([
+            'headline', 'text', 'country'
+        ])
+        return cols
+
+    def save(self) -> None:
+        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda.csv'))
+
 
 class AussdaLongDataFilter(AussdaDataFilter):
     # Corpus A includes six countries and 17 media outlets from 2003 to 2017
@@ -56,7 +71,7 @@ class AussdaLongDataFilter(AussdaDataFilter):
         return tm
 
     def name_mapping(self) -> Dict[str, str]:
-        nm = super().type_mapping()
+        nm = super().name_mapping()
         nm['ID'] = 'id'
         nm['fr_eco'] = 'eco'
         nm['fr_lab'] = 'lab'
@@ -71,15 +86,52 @@ class AussdaLongDataFilter(AussdaDataFilter):
     def include_cols(self) -> List[str]:
         cols = super().include_cols()
         cols.extend([
-            'ID', 'fr_eco', 'fr_lab', 'fr_wel', 'fr_sec', 'fr_cul', 'filter_corpus_A', 'filter_corpus_A'
+            'ID', 'fr_eco', 'fr_lab', 'fr_wel', 'fr_sec', 'fr_cul',
+            #'middle_east', 'eastern_europe',
+            'filter_corpus_A', 'filter_corpus_B'
         ])
         return cols
 
+    def required_cols(self) -> List[str]:
+        cols = super().required_cols()
+        cols.extend([
+            'ID', 'fr_eco', 'fr_lab', 'fr_wel', 'fr_sec', 'fr_cul',
+            #'middle_east', 'eastern_europe',
+            'filter_corpus_A', 'filter_corpus_B'
+        ])
+        return cols
 
-class AussdaShortDataFilter(AussdaDataFilter):
+    def save(self) -> None:
+        dfa: pd.DataFrame = self.df[self.df['filter_corpus_A'] == 1]
+        logger.info("Got CVS Aussda data size corpus A [%s].", dfa.size)
+        dfb: pd.DataFrame = self.df[self.df['filter_corpus_B'] == 1]
+        logger.info("Got CVS Aussda data size corpus B [%s].", dfb.size)
+        dfab: pd.DataFrame = self.df[(self.df['filter_corpus_A'] == 1) & (self.df['filter_corpus_B'] == 1)]
+        logger.info("Got CVS Aussda data size corpus AB [%s].", dfab.size)
+        dfa.to_csv(os.path.join(self.args.data_out_dir, 'aussda_lterm_a.csv'))
+        dfb.to_csv(os.path.join(self.args.data_out_dir, 'aussda_lterm_b.csv'))
+        dfab.to_csv(os.path.join(self.args.data_out_dir, 'aussda_lterm_ab.csv'))
+
+
+class AussdaShortDataFilter(AussdaLongDataFilter):
     # Corpus B covers seven countries and 39 media outlets from 2013 to 2017
     def __init__(self, args) -> None:
         super().__init__(args)
+
+    def include_cols(self) -> List[str]:
+        cols = super().include_cols()
+        cols.remove('filter_corpus_A')
+        cols.remove('filter_corpus_B')
+        return cols
+
+    def required_cols(self) -> List[str]:
+        cols = super().required_cols()
+        cols.remove('filter_corpus_A')
+        cols.remove('filter_corpus_B')
+        return cols
+
+    def save(self) -> None:
+        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_sterm.csv'))
 
 
 class AussdaManualDataFilter(AussdaDataFilter):
@@ -96,7 +148,7 @@ class AussdaManualDataFilter(AussdaDataFilter):
         return tm
 
     def name_mapping(self) -> Dict[str, str]:
-        nm = super().type_mapping()
+        nm = super().name_mapping()
         nm['reminderid_doc_id'] = 'id'
         nm['m_fr_eco'] = 'eco'
         nm['m_fr_lab'] = 'lab'
@@ -113,6 +165,16 @@ class AussdaManualDataFilter(AussdaDataFilter):
             'reminderid_doc_id', 'm_fr_eco', 'm_fr_lab', 'm_fr_wel', 'm_fr_sec'
         ])
         return cols
+
+    def required_cols(self) -> List[str]:
+        cols = super().required_cols()
+        cols.extend([
+            'reminderid_doc_id', 'm_fr_eco', 'm_fr_lab', 'm_fr_wel', 'm_fr_sec'
+        ])
+        return cols
+
+    def save(self) -> None:
+        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_man.csv'))
 
 # Spain
 #   Print:  ABC, El Mundo, El Pais
