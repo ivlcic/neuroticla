@@ -18,7 +18,8 @@ class DataFilter:
         'Bulgaria': 'bg',
         'Germany': 'de',
         'Romania': 'ro',
-        'Poland': 'pl'
+        'Poland': 'pl',
+        'SI': 'si'
     }
 
     languages = {
@@ -29,7 +30,8 @@ class DataFilter:
         'Bulgaria': 'bg',
         'Germany': 'de',
         'Romania': 'ro',
-        'Poland': 'pl'
+        'Poland': 'pl',
+        'SI': 'sl'
     }
 
     @classmethod
@@ -88,35 +90,49 @@ class DataFilter:
             encoding='utf-8',
             nrows=self.args.num_rows
         )
-        logger.info("Got CVS data size [%s] after loading.", self.df.size)
+        logger.info(
+            "Got CVS data size [%s] after loading with included cols %s.",
+            self.df.shape[0], ic
+        )
         nm = self.name_mapping()
         self.df.dropna(
             subset=rc, inplace=True
         )
-        logger.info("Got CVS data size [%s] after dropping.", self.df.size)
+        logger.info(
+            "Got CVS data size [%s] after dropping samples missing required cols %s.",
+            self.df.shape[0], rc
+        )
         if nm:
             self.df.rename(columns=nm, inplace=True)
         logger.info(
-            "Got CVS data size [%s] columns after first filtering: %s", self.df.size, self.df.columns
+            "Renamed CVS data of size [%s] with mapping %s.",
+            self.df.shape[0], nm
+        )
+        self.df.reindex()
+        logger.info(
+            "Got CVS data size [%s] columns after first filtering and renaming: %s",
+            self.df.shape[0], self.df.columns
         )
 
     def filter(self) -> None:
         for i, row in self.df.iterrows():
             body: str = DataFilter.cleanup_text(self.df.at[i, 'body'])
             title: str = DataFilter.cleanup_text(self.df.at[i, 'title'])
-            lead: str = DataFilter.cleanup_text(self.df.at[i, 'lead'])
             country: str = DataFilter.filter_country(self.df.at[i, 'country'])
-            if body is not None:
+            if body:
                 if body.startswith(title):
                     body = body[len(title):]
                 self.df.at[i, 'body'] = body
-            if lead is not None:
-                if lead.startswith(title):
-                    lead = lead[len(title):]
-                self.df.at[i, 'lead'] = lead
-            if country is not None:
+            if country:
                 self.df.at[i, 'country'] = country
             self.df.at[i, 'title'] = title
 
+            if 'lead' in self.df:
+                lead: str = DataFilter.cleanup_text(self.df.at[i, 'lead'])
+                if lead:
+                    if lead.startswith(title):
+                        lead = lead[len(title):]
+                    self.df.at[i, 'lead'] = lead
+
     def save(self) -> None:
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'filtered.csv'))
+        self.df.to_csv(os.path.join(self.args.data_out_dir, 'filtered.csv'), index=False)

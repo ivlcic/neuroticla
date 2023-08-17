@@ -42,12 +42,12 @@ class AussdaDataFilter(DataFilter):
     def required_cols(self) -> List[str]:
         cols = super().required_cols()
         cols.extend([
-            'headline', 'text', 'country'
+            'headline', 'text', 'country', 'source'
         ])
         return cols
 
     def save(self) -> None:
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda.csv'))
+        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda.csv'), index=False)
 
 
 class AussdaLongDataFilter(AussdaDataFilter):
@@ -103,14 +103,14 @@ class AussdaLongDataFilter(AussdaDataFilter):
 
     def save(self) -> None:
         dfa: pd.DataFrame = self.df[self.df['filter_corpus_A'] == 1]
-        logger.info("Got CVS Aussda data size corpus A [%s].", dfa.size)
+        logger.info("Got CVS Aussda data size corpus A [%s].", dfa.shape[0])
         dfb: pd.DataFrame = self.df[self.df['filter_corpus_B'] == 1]
-        logger.info("Got CVS Aussda data size corpus B [%s].", dfb.size)
+        logger.info("Got CVS Aussda data size corpus B [%s].", dfb.shape[0])
         dfab: pd.DataFrame = self.df[(self.df['filter_corpus_A'] == 1) & (self.df['filter_corpus_B'] == 1)]
-        logger.info("Got CVS Aussda data size corpus AB [%s].", dfab.size)
-        dfa.to_csv(os.path.join(self.args.data_out_dir, 'aussda_lterm_a.csv'))
-        dfb.to_csv(os.path.join(self.args.data_out_dir, 'aussda_lterm_b.csv'))
-        dfab.to_csv(os.path.join(self.args.data_out_dir, 'aussda_lterm_ab.csv'))
+        logger.info("Got CVS Aussda data size corpus AB [%s].", dfab.shape[0])
+        dfa.to_csv(os.path.join(self.args.data_out_dir, 'aussda_l_term_a.csv'), index=False)
+        dfb.to_csv(os.path.join(self.args.data_out_dir, 'aussda_l_term_b.csv'), index=False)
+        dfab.to_csv(os.path.join(self.args.data_out_dir, 'aussda_l_term_ab.csv'), index=False)
 
 
 class AussdaShortDataFilter(AussdaLongDataFilter):
@@ -131,7 +131,8 @@ class AussdaShortDataFilter(AussdaLongDataFilter):
         return cols
 
     def save(self) -> None:
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_sterm.csv'))
+        logger.info("Got CVS Aussda short term data size corpus [%s].", self.df.shape[0])
+        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_s_term.csv'), index=False)
 
 
 class AussdaManualDataFilter(AussdaDataFilter):
@@ -174,7 +175,8 @@ class AussdaManualDataFilter(AussdaDataFilter):
         return cols
 
     def save(self) -> None:
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_man.csv'))
+        logger.info("Got CVS Aussda manual data size corpus [%s].", self.df.shape[0])
+        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_man.csv'), index=False)
 
 # Spain
 #   Print:  ABC, El Mundo, El Pais

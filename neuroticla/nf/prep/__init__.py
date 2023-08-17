@@ -37,7 +37,7 @@ def args(nrcla_module: str, parser: ArgumentParser) -> None:
         'input_file',
         help='Corpora file (default: %(default)s)',
         type=str,
-        default='articles_manual_annotated_925.csv'
+        default='aussda_manual.csv'
     )
 
 
