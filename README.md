@@ -7,7 +7,7 @@ Library for neural networks based text classification and processing.
 ### Single time initialization
 ```
 cd ~/projects
-git clone https://github.com/ivlcic/neuroticla.git
+git lfs clone https://github.com/ivlcic/neuroticla.git
 cd neuroticla
 python -m venv venv
 source venv/bin/activate 
