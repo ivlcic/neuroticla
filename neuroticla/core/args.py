@@ -114,6 +114,16 @@ class CommonArguments:
         )
 
     @classmethod
+    def split_data_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
+        path = os.path.join(CommonArguments._package_path('data', package), 'split')
+        parser.add_argument(
+            *name_or_flags,
+            help='Split data directory (default: %(default)s)',
+            type=CommonArguments._is_or_make_dir_path,
+            default=path
+        )
+
+    @classmethod
     def tmp_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
         path = os.path.join(CommonArguments._package_path('tmp', package))
         parser.add_argument(

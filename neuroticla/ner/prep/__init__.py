@@ -102,10 +102,10 @@ def prep_data(args, confs: List[Dict]) -> None:
             logger.info('Converted data [%s -> %s]', proc_fname, target_base_name)
 
 
-def args(package: str, parser: ArgumentParser) -> None:
-    CommonArguments.raw_data_dir(package, parser, ('-i', '--data_in_dir'))
-    CommonArguments.processed_data_dir(package, parser, ('-o', '--data_out_dir'))
-    CommonArguments.tmp_dir(package, parser, ('-t', '--tmp_dir'))
+def args(nrcla_module: str, parser: ArgumentParser) -> None:
+    CommonArguments.raw_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
+    CommonArguments.processed_data_dir(nrcla_module, parser, ('-o', '--data_out_dir'))
+    CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
     parser.add_argument(
         '-a', '--append', help="Append to an existing CoNLL and CSV files", action='store_true'
     )
