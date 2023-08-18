@@ -25,6 +25,15 @@ def main(arg) -> int:
     if not os.path.exists(result_path):
         os.makedirs(result_path)
 
+    mc = TokenClassifyModel(
+        ModelContainer.model_name_map[arg.pretrained_model],
+        Labeler(
+            os.path.join(CommonArguments.data_path('ner', 'processed'), 'tags.csv'),
+            replace_labels=replace_ner_tags(arg)
+        ),
+        os.path.join(arg.tmp_dir, arg.pretrained_model)
+    )
+
     training_args = TrainingArguments(
         output_dir=result_path,
         num_train_epochs=arg.epochs,
@@ -40,15 +49,6 @@ def main(arg) -> int:
         save_total_limit=1,
         metric_for_best_model='f1',
         logging_strategy='epoch',
-    )
-
-    mc = TokenClassifyModel(
-        ModelContainer.model_name_map[arg.pretrained_model],
-        Labeler(
-            os.path.join(CommonArguments.data_path('ner', 'processed'), 'tags.csv'),
-            replace_labels=replace_ner_tags(arg)
-        ),
-        os.path.join(arg.tmp_dir, arg.pretrained_model)
     )
 
     label_field = 'ner'

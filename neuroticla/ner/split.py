@@ -7,6 +7,7 @@ import neuroticla.utils.zip
 from argparse import ArgumentParser
 from neuroticla.core.args import CommonArguments
 from neuroticla.core.split import DataSplit
+from neuroticla.ner.utils import get_all_languages
 
 logger = logging.getLogger('ner.split')
 
@@ -29,8 +30,8 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
         help='Non reproducible data shuffle.',
     )
     parser.add_argument(
-        'langs', help='Language files to split', nargs='+',
-        choices=['sl', 'hr', 'sr', 'bs', 'mk', 'sq', 'cs', 'bg', 'pl', 'ru', 'sk', 'uk']
+        'langs', help='Language files to split.', nargs='+',
+        choices=get_all_languages()
     )
 
 

@@ -104,3 +104,12 @@ def get_obeliks_tokenizer(args):
 def get_reldi_tokenizer(args):
     tokenizer = ReldiTokenizer(args.lang)
     return tokenizer.tokenize
+
+
+def get_tokenizer(args):
+    if args.lang in ['sl']:
+        return get_obeliks_tokenizer(args)
+    elif args.lang in ['bg', 'hr', 'sr', 'mk']:
+        return get_reldi_tokenizer(args)
+    else:
+        return get_stanza_tokenizer(args)

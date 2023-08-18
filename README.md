@@ -74,6 +74,7 @@ Here is the fastest and smallest possible usage example (approx 1h on 1080 Ti):
 ./ner split sr
 ./ner train --tqdm -l 2e-5 -e 40 -b 20 xlmrb sr
 ./ner test --tqdm -b 20 xlmrb sr
+./ner infer xlmrb-sr sr "Pa dali je to Majkel Đekson. Majke mi da jeste!"
 ```
 
 ### Used NER Corpora
