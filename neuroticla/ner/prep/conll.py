@@ -176,20 +176,13 @@ def to_csv(args, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
         json.dump(stats, outfile, indent=2)
     csv.close()
     shutil.copyfile(args.process_file_name, conll_fname)
+    zip_path = os.path.join(args.data_out_dir, args.lang + '.zip')
+    os.remove(zip_path)
     with neuroticla.utils.zip.AESZipFile(
-        os.path.join(args.data_out_dir, args.lang + '.zip'), 'a',
-        compression=neuroticla.utils.zip.ZIP_BZIP2,
-        compresslevel=9
+zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
     ) as myzip:
         myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
-        myzip.setpassword(b'showeffort')  # intentional
-        names = myzip.namelist()
-        if args.target_base_name + '.conll' in names:
-            myzip.remove(args.target_base_name + '.conll')
-        if args.target_base_name + '.json' in names:
-            myzip.remove(args.target_base_name + '.json')
-        if args.target_base_name + '.csv' in names:
-            myzip.remove(args.target_base_name + '.csv')
+        myzip.setpassword(bytes(args.password, encoding='utf-8'))  # intentional
         myzip.write(conll_fname, args.target_base_name + '.conll')
         myzip.write(json_fname, args.target_base_name + '.json')
         myzip.write(csv_fname, args.target_base_name + '.csv')

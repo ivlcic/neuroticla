@@ -102,12 +102,16 @@ def prep_data(args, confs: List[Dict]) -> None:
             logger.info('Converted data [%s -> %s]', proc_fname, target_base_name)
 
 
-def args(nrcla_module: str, parser: ArgumentParser) -> None:
+def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.raw_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
     CommonArguments.processed_data_dir(nrcla_module, parser, ('-o', '--data_out_dir'))
     CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
     parser.add_argument(
         '-a', '--append', help="Append to an existing CoNLL and CSV files", action='store_true'
+    )
+    parser.add_argument(
+        '-p', '--password', type=str, default='showeffort',
+        help="Zip file password",
     )
     parser.add_argument(
         'lang', help='language of the text', choices=[

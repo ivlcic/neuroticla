@@ -57,7 +57,7 @@ class ModuleArguments:
                 subparser.add_argument(
                     'test', help='Test function to invoke', choices=tests
                 )
-            py_module.args(nrcla_module, subparser)
+            py_module.add_args(nrcla_module, subparser)
             logger.debug('Setting up arguments for [%s]', pym_name)
 
     def get_parser(self) -> ArgumentParser:

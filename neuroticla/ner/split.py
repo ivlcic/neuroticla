@@ -11,7 +11,7 @@ from neuroticla.core.split import DataSplit
 logger = logging.getLogger('ner.split')
 
 
-def args(nrcla_module: str, parser: ArgumentParser) -> None:
+def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.processed_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
     CommonArguments.split_data_dir(nrcla_module, parser, ('-o', '--data_out_dir'))
     CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
@@ -25,7 +25,8 @@ def args(nrcla_module: str, parser: ArgumentParser) -> None:
         help="Zip file password",
     )
     parser.add_argument(
-        '-r', '--non_reproducible_shuffle', help='Non reproducible data shuffle.', action='store_true', default=False
+        '-r', '--non_reproducible_shuffle', action='store_true', default=False,
+        help='Non reproducible data shuffle.',
     )
     parser.add_argument(
         'langs', help='languages to split', nargs='+',
