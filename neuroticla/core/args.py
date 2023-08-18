@@ -16,7 +16,7 @@ class CommandArguments:
         self._name = name
         self._description = description
         self._multi_action = multi_action
-        if self._name == 'test':
+        if self._name == 'unittest':
             self._multi_action = True
 
     def get_name(self):
@@ -169,6 +169,15 @@ class CommonArguments:
         )
         parser.add_argument(
             '-e', '--epochs', help='Number of epochs.', type=int, default=20
+        )
+        parser.add_argument(
+            '--max_seq_len', help='Max sentence length in tokens / words.', type=int, default=256
+        )
+
+    @classmethod
+    def test(cls, package: str, parser: ArgumentParser):
+        parser.add_argument(
+            '-b', '--batch', help='Batch size.', type=int, default=32
         )
         parser.add_argument(
             '--max_seq_len', help='Max sentence length in tokens / words.', type=int, default=256

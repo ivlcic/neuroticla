@@ -61,6 +61,11 @@ For all options see:
 ./ner split --help
 ```
 
+### Train
+```
+./ner train -l 2e-5 -e 40 -b 20 xlmrb sl hr sr bs mk sq cs bg pl ru sk uk
+```
+
 ### Used NER Corpora
 
 We keep used NER corpora in this repository just for convenience.
