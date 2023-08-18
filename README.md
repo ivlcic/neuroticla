@@ -25,7 +25,7 @@ source venv/bin/activate
 ## Named Entity Recognition
 
 ### Data preparation
-(single time, optional)
+(single time, optional step)
 
 Convert all Slovenian corpora files to common format
 ```
@@ -38,7 +38,7 @@ See command help for additional options:
 ```
 
 ### Data split
-(single time, before each desired data-split training / fine-tuning)
+(single time, run before each desired data-split change)
 
 The following command:
 ```
@@ -51,11 +51,12 @@ data/ner/split/
 ├── sl_hr_sr_bs_mk_sq_cs_bg_pl_ru_sk_uk.test.csv
 └── sl_hr_sr_bs_mk_sq_cs_bg_pl_ru_sk_uk.train.csv
 ```
-(this is also the default if -s switch is omitted)
+(this is also the default if `-s` switch is omitted)
 
 Each language corpora is combined, shuffled and split. The *train / eval / test* splits 
 are concatenated from all languages in order as specified in command line.
-By default the data shuffle is reproducible.
+
+By default the data shuffle is reproducible, so be careful here!
 
 For all options see: 
 ```
@@ -66,15 +67,33 @@ For all options see:
 ```
 ./ner train -l 2e-5 -e 40 -b 20 xlmrb sl hr sr bs mk sq cs bg pl ru sk uk
 ```
+For all options see: 
+```
+./ner train --help
+```
 
-### Single language example
+### Single language complete example
 Here is the fastest and smallest possible usage example (approx 1h on 1080 Ti):
 ```
+# prep sr.zip that contains target .csv, .conll, and analysis .json, 
 ./ner prep sr
+
+# split it to 80% train, 10% eval, 10% test set.
 ./ner split sr
+
+# train / fine-tune the model showing progess, with 2e-5 learning rate, for 40 epochs and with teh batch size of 20
+# using XLMRoberta-base pretrained model and Serbian language corpora. 
 ./ner train --tqdm -l 2e-5 -e 40 -b 20 xlmrb sr
+
+# output the model evaluation against the test data
 ./ner test --tqdm -b 20 xlmrb sr
-./ner infer xlmrb-sr sr "Pa dali je to Majkel Đekson. Majke mi da jeste!"
+
+# use the model for inference
+./ner infer xlmrb-sr sr "Pa dali je to Majkel Đekson. Majke mi da jeste! I to baš tu usred Beograda!"
+...
+2023-08-18 16:21:55 INFO    ner.infer 71 : Pa dali je to [Majkel Đekson]-{PER}.
+2023-08-18 16:21:56 INFO    ner.infer 71 : Majke mi da jeste!
+2023-08-18 16:21:56 INFO    ner.infer 71 : I to baš tu usred [Beograda]-{LOC}!
 ```
 
 ### Used NER Corpora
