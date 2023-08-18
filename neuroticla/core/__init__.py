@@ -70,10 +70,10 @@ class ExecModule:
         logger.debug('Loading Python module: [%s]', pym_name)
         py_module = importlib.import_module(pym_name)
 
-        if arg.action == 'test':
-            fn = getattr(py_module, 'test_' + arg.test, None)
-            arg.func = fn
-        else:
-            arg.func = py_module.main
+        arg.func = py_module.main
+        if hasattr(args, 'sub_action') and arg.sub_action is not None:
+            fn = getattr(py_module, arg.action + '_' + arg.sub_action, None)
+            if fn is not None:
+                arg.func = fn
 
         return arg.func(arg)

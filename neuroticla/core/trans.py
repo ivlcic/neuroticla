@@ -1,0 +1,275 @@
+import logging
+import numpy as np
+import torch
+import evaluate
+
+from typing import List, Any, Dict, Union
+
+from torch.nn.modules.module import T
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForTokenClassification, \
+    PreTrainedModel, PreTrainedTokenizer, TrainingArguments, Trainer
+from sklearn.metrics import classification_report, accuracy_score, hamming_loss, multilabel_confusion_matrix, f1_score
+
+from .labels import Labeler, MultiLabeler
+from .dataset import ClassifyDataset
+
+logger = logging.getLogger('core.transformers')
+
+
+class ModelContainer(torch.nn.Module):
+
+    model_name_map = {
+        'mcbert': 'bert-base-multilingual-cased',
+        'xlmrb': 'xlm-roberta-base',
+        'xlmrl': 'xlm-roberta-large'
+    }
+
+    def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
+        super().__init__()
+
+        self._labeler: Labeler = labeler
+        self._model: PreTrainedModel = None
+        self._metric = None
+        self._tokenizer: PreTrainedTokenizer = None
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            model_name_or_path, cache_dir=cache_model_dir
+        )
+        use_cuda = torch.cuda.is_available()
+        device = torch.device("cuda" if use_cuda else "cpu")
+        self._device = device
+
+    def model(self):
+        return self._model
+
+    def eval(self):
+        self._model.eval()
+
+    def train(self: T, mode: bool = True) -> T:
+        return super().train(mode)
+
+    def labeler(self):
+        return self._labeler
+
+    def tokenizer(self):
+        return self._tokenizer
+
+    def metric(self):
+        return self._metric
+
+    def device(self):
+        return self._device
+
+    def compute_metrics(self, p, test: bool = False):
+        pass
+
+    def forward(self, input_id, mask, label):
+        output = self._model(input_ids=input_id, attention_mask=mask, labels=label, return_dict=False)
+        return output
+
+    def build(self, args: TrainingArguments,
+              train_set: ClassifyDataset,
+              eval_set: ClassifyDataset):
+        trainer = Trainer(
+            model=self._model,
+            args=args,
+            train_dataset=train_set,
+            eval_dataset=eval_set,
+            tokenizer=self._tokenizer,
+            compute_metrics=self.compute_metrics
+        )
+        logger.debug("Starting training...")
+        trainer.train()
+        logger.info("Training done.")
+        logger.debug("Starting evaluation...")
+        trainer.evaluate()
+        logger.info("Evaluation done.")
+
+    def test(self, training_args: TrainingArguments, test_set: ClassifyDataset):
+        self._model.eval()
+        trainer = Trainer(
+            model=self._model,
+            args=training_args,
+            tokenizer=self._tokenizer,
+            compute_metrics=self.compute_metrics
+        )
+        predictions, labels, _ = trainer.predict(test_set)
+        return self.compute_metrics((predictions, labels), True)
+
+
+class TokenClassifyModel(ModelContainer):
+
+    def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
+        super(TokenClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir)
+
+        self._metric = evaluate.load("seqeval")
+        self._model = AutoModelForTokenClassification.from_pretrained(
+            model_name_or_path, cache_dir=cache_model_dir, num_labels=labeler.mun_labels(),
+            id2label=labeler.ids2labels(), label2id=labeler.labels2ids()
+        )
+        self._model.to(self._device)
+
+    def compute_metrics(self, p, test: bool = False):
+        logits, labels_list = p
+
+        # select predicted index with maximum logit for each token
+        predictions_list = np.argmax(logits, axis=2)
+
+        tagged_predictions_list = []
+        tagged_labels_list = []
+        for predictions, labels in zip(predictions_list, labels_list):
+            tagged_predictions = []
+            tagged_labels = []
+            for pid, lid in zip(predictions, labels):
+                if lid != -100:
+                    tagged_predictions.append(self._labeler.id2label(pid))
+                    tagged_labels.append(self._labeler.id2label(lid))
+            tagged_predictions_list.append(tagged_predictions)
+            tagged_labels_list.append(tagged_labels)
+
+        results = self._metric.compute(
+            predictions=tagged_predictions_list, references=tagged_labels_list, scheme='IOB2', mode='strict'
+        )
+        if test:
+            return results
+        logger.info("Batch eval: %s", results)
+        if len(logger.handlers) > 0:
+            logger.handlers[0].flush()
+        return {
+            "precision": results["overall_precision"],
+            "recall": results["overall_recall"],
+            "f1": results["overall_f1"],
+            "accuracy": results["overall_accuracy"],
+        }
+
+    def infer(self, word_list: Union[str, List[str]]) -> List[Dict[str, str]]:
+        self._model.eval()
+        is_split = False if isinstance(word_list, str) else True
+        model_inputs = self._tokenizer(
+            word_list,
+            return_tensors="pt",
+            truncation=False,
+            is_split_into_words=is_split,
+        )
+        if len(model_inputs["input_ids"][0]) > self._tokenizer.model_max_length:
+            sent = " ".join(word_list)
+            logger.warning(f"Truncated long input sentence:\n{sent}")
+            model_inputs = self._tokenizer(
+                word_list,
+                return_tensors="pt",
+                truncation=True,
+                is_split_into_words=is_split,
+            )
+
+        model_inputs.to(self._device)
+        with torch.no_grad():
+            logits = self._model(**model_inputs)[0]
+            # scores = logits.softmax(1).max(axis=1).values.numpy().tolist()
+            predicted_classes = logits[0].argmax(axis=1).cpu().numpy().tolist()
+
+        result: List[Dict[str, str]] = []
+        word_ids = model_inputs.word_ids()
+        for ix in range(1, len(model_inputs[0]) - 1):
+            contd_cls_name = self._labeler.id2label(predicted_classes[ix], 'O')
+            token_idx = word_ids[ix]
+            if token_idx >= len(word_list):
+                continue
+            if token_idx < len(result):
+                result[token_idx]['ner'] = contd_cls_name
+            else:
+                result.append({'text': word_list[token_idx], 'ner': contd_cls_name})
+        return result
+
+
+class SklearnClassificationReport:
+
+    def flatten_1hot(self, indicators: Union[List, np.array], binary: bool = True) -> List:
+        result = []
+        for indicator in indicators:
+            for i, v in enumerate(indicator):
+                result.append((i * (2 if binary else 1)) + (0 if v == 0 else 1))
+        return result
+
+    def compute(self, predictions: List[Any], references: List[Any], labels: List[str], output_dict=True):
+        hamming = False
+        if len(predictions) > 0 and (isinstance(predictions[0], List) or isinstance(predictions[0], np.ndarray)):
+            # we assume label indicator array / sparse matrix and two times more labels than sample dimensions
+            y_pred = self.flatten_1hot(predictions)
+            y_true = self.flatten_1hot(references)
+            hamming = True
+        else:
+            y_pred = predictions
+            y_true = references
+        result = classification_report(
+            y_true, y_pred, digits=3, zero_division=0, output_dict=output_dict, target_names=labels
+        )
+        if output_dict:
+            if hamming:
+                result['hamming_loss'] = hamming_loss(references, predictions)
+                result['cm'] = multilabel_confusion_matrix(references, predictions)
+                result['micro-F1'] = f1_score(references, predictions, average='micro')
+            if 'accuracy' not in result and output_dict:
+                result['accuracy'] = accuracy_score(references, predictions)
+        return result
+
+
+class SeqClassifyModel(ModelContainer):
+
+    def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
+        super(SeqClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir)
+
+        self._metric = SklearnClassificationReport()
+        self._model = AutoModelForSequenceClassification.from_pretrained(
+            model_name_or_path, cache_dir=cache_model_dir, num_labels=labeler.mun_labels(),
+            id2label=labeler.ids2labels(), label2id=labeler.labels2ids()
+        )
+        self._model.to(self._device)
+
+    def compute_metrics(self, p, test: bool = False):
+        logits, y_true = p
+
+        # select predicted index with maximum logit for each token
+        y_pred = np.argmax(logits, axis=1)
+
+        labels = self._labeler.source_labels()
+        if isinstance(self._labeler, MultiLabeler):
+            decoded_predictions = []
+            decoded_labels = []
+            for p_sample, t_sample in zip(y_pred, y_true):
+                decoded_predictions.append(self._labeler.binpowset(p_sample))
+                decoded_labels.append(self._labeler.binpowset(t_sample))
+            y_pred = decoded_predictions
+            y_true = decoded_labels
+            labels = self._labeler.for_binary_eval()
+
+        results = self._metric.compute(predictions=y_pred, references=y_true, labels=labels)
+        if test:
+            if isinstance(self._labeler, MultiLabeler):
+                pass
+            return results
+        logger.info("Batch eval: %s", results)
+        if len(logger.handlers) > 0:
+            logger.handlers[0].flush()
+        return {
+            "precision": results['macro avg']["precision"],
+            "recall": results['macro avg']["recall"],
+            "f1": results['macro avg']["f1-score"],
+            "accuracy": results['accuracy']
+        }
+
+    def infer(self, word_list: Union[str, List[str]]) -> str:
+        self._model.eval()
+        is_split = False if isinstance(word_list, str) else True
+        model_inputs = self._tokenizer(
+            word_list,
+            return_tensors="pt",
+            truncation=True,
+            is_split_into_words=is_split
+        )
+        model_inputs.to(self._device)
+        with torch.no_grad():
+            logits = self._model(**model_inputs).logits
+            predicted_class_id = logits.argmax().item()
+            if isinstance(self._labeler, MultiLabeler):
+                return self._labeler.binpowset(predicted_class_id)
+            else:
+                return self._labeler.id2label(predicted_class_id)

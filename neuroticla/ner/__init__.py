@@ -7,6 +7,7 @@ NRCLA_MODULE = ModuleDescriptor(
     ModuleArguments([
         CommandArguments('prep', 'Prepares the data'),
         CommandArguments('split', 'Splits the data'),
+        CommandArguments('train', 'Trains the model'),
         CommandArguments('test', 'Internal tests')
     ])
 )

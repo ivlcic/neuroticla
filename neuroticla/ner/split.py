@@ -29,13 +29,12 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
         help='Non reproducible data shuffle.',
     )
     parser.add_argument(
-        'langs', help='languages to split', nargs='+',
+        'langs', help='Language files to split', nargs='+',
         choices=['sl', 'hr', 'sr', 'bs', 'mk', 'sq', 'cs', 'bg', 'pl', 'ru', 'sk', 'uk']
     )
 
 
 def main(arg) -> int:
-    logger.debug("main")
     files = {}
     for lang in arg.langs:
         lang_dir_path = os.path.join(arg.data_out_dir, lang)

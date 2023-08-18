@@ -1,4 +1,5 @@
 import os
+import numpy
 
 from typing import Dict, List, Union
 
@@ -57,3 +58,73 @@ class Labeler:
         for k, v in self._replace_labels.items():
             text = text.replace(k, v)
         return text
+
+
+class BinaryLabeler(Labeler):
+
+    def __init__(self, file_name: str = None, labels: List = None, replace_labels: Dict[str, str] = None):
+        super().__init__(file_name, labels, replace_labels)
+        self._source_labels = self._labels
+        self._replace_labels = replace_labels
+        if replace_labels is not None:
+            for k in self._replace_labels.keys():
+                self._labels = self._labels.remove(k)
+        if len(self._labels) != 1:
+            raise ValueError('BinaryLabeler should have single label!')
+        # self._label_to_id = {self._labels[0]: 1, 'not_' + self._labels[0]: 0}
+        # self._id_to_label = {1: self._labels[0], 0: 'not_' + self._labels[0]}
+        self._label_to_id = {1: 1, 0: 0}
+        self._id_to_label = {1: 1, 0: 0}
+
+
+class MultiLabeler(Labeler):
+
+    def __init__(self, file_name: str = None, labels: List = None, replace_labels: Dict[str, str] = None):
+        super().__init__(file_name, labels, replace_labels)
+        self._num_bits = len(self._source_labels)
+        self._labels = []
+        for i in range(0, 2 ** self._num_bits):
+            bitlist = [k for k in range(i.bit_length()) if i & (1 << k)]
+            label = ''
+            for idx in bitlist:
+                label += self._source_labels[idx]
+            self._labels.append(label)
+        self._label_to_id = {k: v for v, k in enumerate(self._labels) if k not in self._replace_labels.keys()}
+        self._id_to_label = {v: k for v, k in enumerate(self._labels) if k not in self._replace_labels.keys()}
+
+    def decode(self, idx: int) -> List[str]:
+        labels = []
+        for i in range(0, idx.bit_length()):
+            mask = 1 << i
+            test = idx & mask
+            if test != 0:
+                labels.append(self._source_labels[i])
+        return labels
+
+    def encode(self, labels: List[str]) -> int:
+        target: str = ''
+        for src_label in self._source_labels:
+            if src_label in labels:
+                target += src_label
+        return self._label_to_id[target]
+
+    def for_binary_eval(self) -> List[str]:
+        result = []
+        for lx in self._source_labels:
+            result.append(lx + '0')
+            result.append(lx + '1')
+
+        return result
+
+    def binpowset(self, idx):
+        if isinstance(idx, numpy.int64):
+            idx = idx.item()
+        labels = []
+        for i in range(0, self._num_bits):
+            mask = 1 << i
+            test = idx & mask
+            if test != 0:
+                labels.append(1)
+            else:
+                labels.append(0)
+        return labels

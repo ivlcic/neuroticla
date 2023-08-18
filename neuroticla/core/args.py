@@ -12,15 +12,21 @@ logger = logging.getLogger('core.args')
 
 class CommandArguments:
 
-    def __init__(self, name: str, description: str):
+    def __init__(self, name: str, description: str, multi_action: bool = False):
         self._name = name
         self._description = description
+        self._multi_action = multi_action
+        if self._name == 'test':
+            self._multi_action = True
 
     def get_name(self):
         return self._name
 
     def get_description(self):
         return self._description
+
+    def is_multi_action(self):
+        return self._multi_action
 
 
 class ModuleArguments:
@@ -38,6 +44,7 @@ class ModuleArguments:
         )
         for x in self._commands:
             cmd_name = x.get_name()
+            multi_action = x.is_multi_action()
             pym_name = project + '.' + nrcla_module + '.' + cmd_name
             logger.debug('Loading Python module: [%s]', pym_name)
             py_module = importlib.import_module(pym_name)
@@ -49,13 +56,14 @@ class ModuleArguments:
                 formatter_class=argparse.RawTextHelpFormatter
             )
 
-            if cmd_name == 'test':
-                tests = []
+            if multi_action:
+                sub_actions = []
                 for n in dir(py_module):
-                    if n.startswith('test_'):
-                        tests.append(n[5:])
+                    if n.startswith(cmd_name + '_'):
+                        sub_actions.append(n[len(cmd_name) + 1:])
                 subparser.add_argument(
-                    'test', help='Test function to invoke', choices=tests
+                    'sub_action',
+                    help=cmd_name.capitalize() + ' functions to invoke', choices=sub_actions
                 )
             py_module.add_args(nrcla_module, subparser)
             logger.debug('Setting up arguments for [%s]', pym_name)
@@ -94,8 +102,14 @@ class CommonArguments:
         return os.path.join(path, path_type, package)
 
     @classmethod
+    def data_path(cls, package: str, sub_path: str) -> str:
+        path = os.path.join(CommonArguments._package_path('data', package), sub_path)
+        return path
+
+    @classmethod
     def raw_data_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
-        path = os.path.join(CommonArguments._package_path('data', package), 'raw')
+        path = cls.data_path(package, 'raw')
+        # os.path.join(CommonArguments._package_path('data', package), 'raw')
         parser.add_argument(
             *name_or_flags,
             help='Corpora raw directory (default: %(default)s)',
@@ -105,7 +119,8 @@ class CommonArguments:
 
     @classmethod
     def processed_data_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
-        path = os.path.join(CommonArguments._package_path('data', package), 'processed')
+        path = cls.data_path(package, 'processed')
+        # os.path.join(CommonArguments._package_path('data', package), 'processed')
         parser.add_argument(
             *name_or_flags,
             help='Processed data directory (default: %(default)s)',
@@ -115,7 +130,8 @@ class CommonArguments:
 
     @classmethod
     def split_data_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
-        path = os.path.join(CommonArguments._package_path('data', package), 'split')
+        path = cls.data_path(package, 'split')
+        # os.path.join(CommonArguments._package_path('data', package), 'split')
         parser.add_argument(
             *name_or_flags,
             help='Split data directory (default: %(default)s)',
@@ -131,4 +147,29 @@ class CommonArguments:
             help='Process working tmp directory (default: %(default)s)',
             type=CommonArguments._is_or_make_dir_path,
             default=path
+        )
+
+    @classmethod
+    def result_dir(cls, package: str, parser: ArgumentParser, name_or_flags: Tuple[str, ...]) -> None:
+        path = os.path.join(CommonArguments._package_path('result', package))
+        parser.add_argument(
+            *name_or_flags,
+            help='Process result directory (default: %(default)s)',
+            type=CommonArguments._is_or_make_dir_path,
+            default=path
+        )
+
+    @classmethod
+    def train(cls, package: str, parser: ArgumentParser):
+        parser.add_argument(
+            '-b', '--batch', help='Batch size.', type=int, default=32
+        )
+        parser.add_argument(
+            '-l', '--learn_rate', help='Learning rate', type=float, default=2e-5
+        )
+        parser.add_argument(
+            '-e', '--epochs', help='Number of epochs.', type=int, default=20
+        )
+        parser.add_argument(
+            '--max_seq_len', help='Max sentence length in tokens / words.', type=int, default=256
         )

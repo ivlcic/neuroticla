@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from typing import Dict, List
-logger = logging.getLogger('neuroticla.core.split')
+logger = logging.getLogger('core.split')
 
 
 class DataSplit:
@@ -57,3 +57,28 @@ class DataSplit:
         evaluation_df = pd.concat(evaluation_sets)
         test_df = pd.concat(test_sets)
         return training_df, evaluation_df, test_df
+
+    @classmethod
+    def load(cls, path_prefixes: List[str]) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
+
+        training_sets: List[pd.DataFrame] = []
+        evaluation_sets: List[pd.DataFrame] = []
+        test_sets: List[pd.DataFrame] = []
+        for path_prefix in path_prefixes:
+            logger.debug("Loading corpus [%s]...", path_prefix)
+            if not os.path.exists(path_prefix + '.train.csv'):
+                delim = '_'
+            else:
+                delim = '.'
+            training_sets.append(
+                pd.read_csv(path_prefix + delim + 'train.csv')
+            )
+            evaluation_sets.append(
+                pd.read_csv(path_prefix + delim + 'eval.csv')
+            )
+            test_sets.append(
+                pd.read_csv(path_prefix + delim + 'test.csv')
+            )
+            logger.debug("Loaded corpus [%s]", path_prefix)
+
+        return pd.concat(training_sets), pd.concat(evaluation_sets), pd.concat(test_sets)
