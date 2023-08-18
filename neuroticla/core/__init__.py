@@ -3,8 +3,7 @@ from __future__ import annotations
 import importlib
 import logging
 import os
-
-from typing import Self
+from typing import Type
 
 from .args import ModuleArguments, ArgumentParser
 
@@ -49,7 +48,7 @@ class ModuleDescriptor:
 class ExecModule:
 
     @classmethod
-    def get(cls, file_as_module_name: str) -> Self:
+    def get(cls, file_as_module_name: str) -> Type[ExecModule]:
         package = os.path.splitext(os.path.basename(file_as_module_name))[0]
         logger.debug('Loading package: [%s]', package)
         py_module = importlib.import_module(ModuleDescriptor.project + '.' + package)

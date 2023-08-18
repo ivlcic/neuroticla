@@ -53,7 +53,8 @@ data/ner/split/
 ```
 (this is also the default if -s switch is omitted)
 
-Each language corpora is combined, shuffled and split. The *train / eval / test* splits are concatenated from all languages in order as specified in command line.
+Each language corpora is combined, shuffled and split. The *train / eval / test* splits 
+are concatenated from all languages in order as specified in command line.
 By default the data shuffle is reproducible.
 
 For all options see: 
@@ -64,6 +65,15 @@ For all options see:
 ### Train
 ```
 ./ner train -l 2e-5 -e 40 -b 20 xlmrb sl hr sr bs mk sq cs bg pl ru sk uk
+```
+
+### Single language example
+Here is the fastest and smallest possible usage example (approx 1h on 1080 Ti):
+```
+./ner prep sr
+./ner split sr
+./ner train --tqdm -l 2e-5 -e 40 -b 20 xlmrb sr
+./ner test --tqdm -b 20 xlmrb sr
 ```
 
 ### Used NER Corpora
