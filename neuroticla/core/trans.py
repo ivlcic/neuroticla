@@ -1,3 +1,5 @@
+import os
+import shutil
 import logging
 import numpy as np
 import torch
@@ -23,6 +25,27 @@ class ModelContainer(torch.nn.Module):
         'xlmrb': 'xlm-roberta-base',
         'xlmrl': 'xlm-roberta-large'
     }
+
+    @classmethod
+    def remove_checkpoint_dir(cls, result_path: str):
+        for rd in os.listdir(result_path):
+            checkpoint_path = os.path.join(result_path, rd)
+            if not rd.startswith('checkpoint'):
+                continue
+            if not os.path.isdir(checkpoint_path):
+                continue
+            moved = False
+            for f in os.listdir(checkpoint_path):
+                source_file_path = os.path.join(checkpoint_path, f)
+                if not os.path.isfile(source_file_path):
+                    continue
+                target_file_path = os.path.join(result_path, f)
+                shutil.move(source_file_path, target_file_path)
+                moved = True
+                logger.info("Moved [%s] -> [%s].", source_file_path, target_file_path)
+            if moved:
+                shutil.rmtree(checkpoint_path)
+                logger.info("Removed checkpoint dir [%s].", checkpoint_path)
 
     def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
         super().__init__()
