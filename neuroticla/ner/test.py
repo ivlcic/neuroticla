@@ -40,7 +40,7 @@ def main(arg) -> int:
     )
     logger.info("Starting test set evaluation...")
 
-    _, _, test_data = DataSplit.load(get_data_path_prefix(arg))
+    _, _, test_data = DataSplit.load(get_data_paths_prefixes(arg))
     test_set = TokenClassifyDataset(mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, 'ner', 'sentence')
     results = mc.test(testing_args, test_set)
     logger.info("Test set evaluation results:")

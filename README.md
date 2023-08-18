@@ -47,15 +47,46 @@ The following command:
 will produce 80%% train, 10%% evaluation and 10%% test data set size:
 ```
 data/ner/split/
-├── sl_hr_sr_bs_mk_sq_cs_bg_pl_ru_sk_uk.eval.csv
-├── sl_hr_sr_bs_mk_sq_cs_bg_pl_ru_sk_uk.test.csv
-└── sl_hr_sr_bs_mk_sq_cs_bg_pl_ru_sk_uk.train.csv
+├── bg.eval.csv
+├── bg.test.csv
+├── bg.train.csv
+├── bs.eval.csv
+├── bs.test.csv
+├── bs.train.csv
+├── cs.eval.csv
+├── cs.test.csv
+├── cs.train.csv
+├── hr.eval.csv
+├── hr.test.csv
+├── hr.train.csv
+├── mk.eval.csv
+├── mk.test.csv
+├── mk.train.csv
+├── pl.eval.csv
+├── pl.test.csv
+├── pl.train.csv
+├── ru.eval.csv
+├── ru.test.csv
+├── ru.train.csv
+├── sk.eval.csv
+├── sk.test.csv
+├── sk.train.csv
+├── sl.eval.csv
+├── sl.test.csv
+├── sl.train.csv
+├── sq.eval.csv
+├── sq.test.csv
+├── sq.train.csv
+├── sr.eval.csv
+├── sr.test.csv
+├── sr.train.csv
+├── uk.eval.csv
+├── uk.test.csv
+└── uk.train.csv
 ```
 (this is also the default if `-s` switch is omitted)
 
-Each language corpora is combined, shuffled and split. The *train / eval / test* splits 
-are concatenated from all languages in order as specified in command line.
-
+Each language corpora is combined, shuffled and split. 
 By default the data shuffle is reproducible, so be careful here!
 
 For all options see: 
@@ -64,6 +95,9 @@ For all options see:
 ```
 
 ### Train
+The *train / eval / test* splits 
+are concatenated from all languages in order as specified in command line.
+
 ```
 ./ner train -l 2e-5 -e 40 -b 20 xlmrb sl hr sr bs mk sq cs bg pl ru sk uk
 ```

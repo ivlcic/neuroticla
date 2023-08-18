@@ -54,7 +54,7 @@ def main(arg) -> int:
     label_field = 'ner'
     text_field = 'sentence'
 
-    train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
+    train_data, eval_data, test_data = DataSplit.load(get_data_paths_prefixes(arg))
     logger.debug("Constructing train data set [%s]...", len(train_data))
     train_set = TokenClassifyDataset(mc.labeler(), mc.tokenizer(), train_data,
                                      arg.max_seq_len, label_field, text_field)

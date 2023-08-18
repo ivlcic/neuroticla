@@ -79,6 +79,6 @@ class DataSplit:
             test_sets.append(
                 pd.read_csv(path_prefix + delim + 'test.csv')
             )
-            logger.debug("Loaded corpus [%s]", path_prefix)
+            logger.info("Loaded corpus [%s]", path_prefix)
 
         return pd.concat(training_sets), pd.concat(evaluation_sets), pd.concat(test_sets)

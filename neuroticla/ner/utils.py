@@ -48,10 +48,11 @@ def compute_model_name(arg) -> None:
         arg.model_name = model_name
 
 
-def get_data_path_prefix(arg) -> List[str]:
-    corpora_prefix = '_'.join(arg.langs)
-    data_path = os.path.join(arg.data_in_dir, corpora_prefix)
-    return [data_path]
+def get_data_paths_prefixes(arg) -> List[str]:
+    data_paths = []
+    for lng in arg.langs:
+        data_paths.append(os.path.join(arg.data_in_dir, lng))
+    return data_paths
 
 
 def replace_ner_tags(args) -> Dict[str, str]:

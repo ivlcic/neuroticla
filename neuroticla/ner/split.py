@@ -60,23 +60,19 @@ def main(arg) -> int:
                         files[lang].append(os.path.join(lang_dir_path, f))
             else:
                 files[lang].append(os.path.join(lang_dir_path, f))
+        if arg.non_reproducible_shuffle:
+            training_data, evaluation_data, test_data = DataSplit.split(arg.data_split, lang, files[lang])
+        else:
+            training_data, evaluation_data, test_data = DataSplit.split(arg.data_split, lang, files[lang], 2611)
+        target_path = os.path.join(arg.data_out_dir, lang)
+        training_data.to_csv(
+            target_path + '.train.csv', index=False, encoding='utf-8'
+        )
+        evaluation_data.to_csv(
+            target_path + '.eval.csv', index=False, encoding='utf-8'
+        )
+        test_data.to_csv(
+            target_path + '.test.csv', index=False, encoding='utf-8'
+        )
 
-    if arg.non_reproducible_shuffle:
-        training_data, evaluation_data, test_data = DataSplit.multi_split(arg.data_split, files)
-    else:
-        training_data, evaluation_data, test_data = DataSplit.multi_split(arg.data_split, files, 2611)
-
-    target_path = os.path.join(arg.data_out_dir, '_'.join(arg.langs))
-    training_data.to_csv(
-        target_path + '.train.csv', index=False, encoding='utf-8'
-    )
-    evaluation_data.to_csv(
-        target_path + '.eval.csv', index=False, encoding='utf-8'
-    )
-    test_data.to_csv(
-        target_path + '.test.csv', index=False, encoding='utf-8'
-    )
-    for lang in arg.langs:
-        lang_dir_path = os.path.join(arg.data_out_dir, lang)
-        shutil.rmtree(lang_dir_path)
     return 0
