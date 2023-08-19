@@ -109,14 +109,14 @@ For all options see:
 ### Single language complete example
 Here is the fastest and smallest possible usage example (approx 1h on 1080 Ti):
 ```
-# prep sr.zip that contains target .csv, .conll, and analysis .json, 
+# optionally prep sr.zip that contains target .csv, .conll, and analysis .json, 
 ./ner prep sr
 
 # split it to 80% train, 10% eval, 10% test set.
 ./ner split sr
 
 # train / fine-tune the model showing progess, with 2e-5 learning rate, for 40 epochs and with teh batch size of 20
-# using XLMRoberta-base pretrained model and Serbian language corpora. 
+# using HuggingFace's XLMRoberta-base pretrained model and Serbian language corpora. 
 ./ner train --tqdm -l 2e-5 -e 40 -b 20 xlmrb sr
 
 # output the model evaluation against the test data
@@ -125,9 +125,20 @@ Here is the fastest and smallest possible usage example (approx 1h on 1080 Ti):
 # use the model for inference
 ./ner infer xlmrb-sr sr "Pa dali je to Majkel Đekson. Majke mi da jeste! I to baš tu usred Beograda!"
 ...
-2023-08-18 16:21:55 INFO    ner.infer 71 : Pa dali je to [Majkel Đekson]-{PER}.
-2023-08-18 16:21:56 INFO    ner.infer 71 : Majke mi da jeste!
-2023-08-18 16:21:56 INFO    ner.infer 71 : I to baš tu usred [Beograda]-{LOC}!
+2023-08-18 16:21:55 INFO    ner.infer 67 : Pa dali je to [Majkel Đekson]-{PER}.
+2023-08-18 16:21:56 INFO    ner.infer 67 : [Majke]-{PER} mi da jeste!
+2023-08-18 16:21:56 INFO    ner.infer 67 : I to baš tu usred [Beograda]-{LOC}!
+
+# train / fine-tune the model showing progess, with 2e-5 learning rate, for 40 epochs and with teh batch size of 20
+# using HuggingFace's XLMRoberta-large pretrained model and Serbian language corpora. 
+./ner train --tqdm -l 2e-5 -e 40 -b 20 xlmrl sr
+
+# use the model for inference
+./ner infer xlmrb-sr sr "Pa dali je to Majkel Đekson. Majke mi da jeste! I to baš tu usred Beograda!"
+...
+2023-08-19 06:25:14 INFO    ner.infer 67 : Pa dali je to [Majkel Đekson]-{PER}.
+2023-08-19 06:25:14 INFO    ner.infer 67 : [Majke]-{PER} mi da jeste!
+2023-08-19 06:25:14 INFO    ner.infer 67 : I to baš tu usred [Beograda]-{LOC}!
 ```
 
 ### Used NER Corpora
