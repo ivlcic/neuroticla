@@ -177,9 +177,10 @@ def to_csv(args, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
     csv.close()
     shutil.copyfile(args.process_file_name, conll_fname)
     zip_path = os.path.join(args.data_out_dir, args.lang + '.zip')
-    os.remove(zip_path)
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
     with neuroticla.utils.zip.AESZipFile(
-zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
+            zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
     ) as myzip:
         myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
         myzip.setpassword(bytes(args.password, encoding='utf-8'))  # intentional

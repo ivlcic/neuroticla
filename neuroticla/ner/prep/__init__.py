@@ -12,6 +12,7 @@ from .cnec import clean as cnec_clean
 from argparse import ArgumentParser
 from typing import Dict, List, Any
 from neuroticla.core.args import CommonArguments
+from neuroticla.ner.utils import get_all_languages
 
 logger = logging.getLogger('ner.prep')
 
@@ -114,9 +115,7 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
         help="Zip file password",
     )
     parser.add_argument(
-        'lang', help='language of the text', choices=[
-            'sl', 'hr', 'sr', 'bs', 'mk', 'sq', 'cs', 'bg', 'pl', 'ru', 'sk', 'uk'
-        ]
+        'lang', help='language of the text', choices=get_all_languages()
     )
 
 

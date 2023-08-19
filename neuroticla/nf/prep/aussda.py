@@ -2,7 +2,10 @@ import os
 import logging
 import pandas as pd
 
+import neuroticla.utils.zip
+
 from typing import Dict, List
+
 from .filter import DataFilter
 
 logger = logging.getLogger('nf.prep.aussda')
@@ -176,7 +179,19 @@ class AussdaManualDataFilter(AussdaDataFilter):
 
     def save(self) -> None:
         logger.info("Got CVS Aussda manual data size corpus [%s].", self.df.shape[0])
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_man.csv'), index=False)
+        csv_path = os.path.join(self.args.data_out_dir, 'aussda.csv')
+        zip_path = os.path.join(self.args.data_out_dir, 'aussda.zip')
+        self.df.to_csv(csv_path, index=False)
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+        with neuroticla.utils.zip.AESZipFile(
+                zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
+        ) as myzip:
+            myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
+            myzip.setpassword(bytes(self.args.password, encoding='utf-8'))  # intentional
+            myzip.write(csv_path, 'aussda.csv')
+            myzip.close()
+        os.remove(csv_path)
 
 # Spain
 #   Print:  ABC, El Mundo, El Pais

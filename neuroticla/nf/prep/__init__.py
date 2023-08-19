@@ -34,6 +34,9 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.processed_data_dir(nrcla_module, parser, ('-o', '--data_out_dir'))
     parser.add_argument('--num_rows', type=int, help='Numer of rows to use', default=None)
     parser.add_argument(
+        '-p', '--password', type=str, help="Zip file password", required=True
+    )
+    parser.add_argument(
         'input_file',
         help='Corpora file (default: %(default)s)',
         type=str,
