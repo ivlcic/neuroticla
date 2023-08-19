@@ -68,5 +68,7 @@ def main(arg) -> int:
             for f in corpora_files:
                 myzip.write(f, os.path.basename(f))
             myzip.close()
+        for f in corpora_files:
+            os.remove(f)
 
     return 0

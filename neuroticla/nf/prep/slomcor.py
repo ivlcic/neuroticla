@@ -26,13 +26,8 @@ class SlomcorDataFilter(DataFilter):
         ]
 
     def save(self) -> List[str]:
-        if 'middle' in self.args.input_file:
-            logger.info("Got CVS Slomcor Middle-East data size corpus [%s].", len(self.df.index))
-            csv_file = os.path.join(self.target_dir_path, 'slomcor_middle_east.csv')
-            self.df.to_csv(csv_file, index=False)
-            return [csv_file]
-        else:
-            logger.info("Got CVS Slomcor Ukraine data size corpus [%s].", len(self.df.index))
-            csv_file = os.path.join(self.target_dir_path, 'slomcor_ukraine.csv')
-            self.df.to_csv(csv_file, index=False)
-            return [csv_file]
+        base_name = os.path.basename(self.input_path)
+        logger.info("Got CVS Slomcor [%s] data size corpus [%s].", base_name, self.df.shape[0])
+        csv_file = os.path.join(self.target_dir_path, base_name)
+        self.df.to_csv(csv_file, index=False)
+        return [csv_file]
