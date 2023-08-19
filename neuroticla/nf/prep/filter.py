@@ -57,10 +57,12 @@ class DataFilter:
             return
         return cls.languages[s]
 
-    def __init__(self, args) -> None:
+    def __init__(self, input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> None:
         super().__init__()
-        self.args = args
-        self.num_rows = args.num_rows
+        self.input_path = input_path
+        self.target_dir_path = target_dir_path
+        self.num_rows = num_rows
+        self.base_name = base_name
         self.df: Union[pd.DataFrame, Any] = None
 
     def type_mapping(self) -> Dict[str, str]:
@@ -83,12 +85,12 @@ class DataFilter:
         ic = self.include_cols()
         rc = self.required_cols()
         self.df: pd.DataFrame = pd.read_csv(
-            self.args.input_path,
+            self.input_path,
             dtype=tm if tm else None,
             skiprows=lambda x: self.skip_rows(x),
             usecols=ic if ic else None,
             encoding='utf-8',
-            nrows=self.args.num_rows
+            nrows=self.num_rows
         )
         logger.info(
             "Got CVS data size [%s] after loading with included cols %s.",
@@ -134,5 +136,7 @@ class DataFilter:
                         lead = lead[len(title):]
                     self.df.at[i, 'lead'] = lead
 
-    def save(self) -> None:
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'filtered.csv'), index=False)
+    def save(self) -> List[str]:
+        csv_file = os.path.join(self.target_dir_path, 'filtered.csv')
+        self.df.to_csv(csv_file, index=False)
+        return [csv_file]

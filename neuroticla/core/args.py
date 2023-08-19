@@ -160,7 +160,7 @@ class CommonArguments:
         )
 
     @classmethod
-    def train(cls, package: str, parser: ArgumentParser):
+    def train(cls, parser: ArgumentParser):
         parser.add_argument(
             '-b', '--batch', help='Batch size.', type=int, default=32
         )
@@ -175,7 +175,7 @@ class CommonArguments:
         )
 
     @classmethod
-    def test(cls, package: str, parser: ArgumentParser):
+    def test(cls, parser: ArgumentParser):
         parser.add_argument(
             '-b', '--batch', help='Batch size.', type=int, default=32
         )

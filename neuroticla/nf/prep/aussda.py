@@ -2,10 +2,7 @@ import os
 import logging
 import pandas as pd
 
-import neuroticla.utils.zip
-
 from typing import Dict, List
-
 from .filter import DataFilter
 
 logger = logging.getLogger('nf.prep.aussda')
@@ -13,8 +10,8 @@ logger = logging.getLogger('nf.prep.aussda')
 
 class AussdaDataFilter(DataFilter):
 
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> None:
+        super().__init__(input_path, target_dir_path, base_name, num_rows)
 
     def type_mapping(self) -> Dict[str, str]:
         return {
@@ -50,14 +47,14 @@ class AussdaDataFilter(DataFilter):
         return cols
 
     def save(self) -> None:
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda.csv'), index=False)
+        self.df.to_csv(os.path.join(self.target_dir_path, 'aussda.csv'), index=False)
 
 
 class AussdaLongDataFilter(AussdaDataFilter):
     # Corpus A includes six countries and 17 media outlets from 2003 to 2017
     # Corpus B covers seven countries and 39 media outlets from 2013 to 2017
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> None:
+        super().__init__(input_path, target_dir_path, base_name, num_rows)
 
     def type_mapping(self) -> Dict[str, str]:
         tm = super().type_mapping()
@@ -90,7 +87,7 @@ class AussdaLongDataFilter(AussdaDataFilter):
         cols = super().include_cols()
         cols.extend([
             'ID', 'fr_eco', 'fr_lab', 'fr_wel', 'fr_sec', 'fr_cul',
-            #'middle_east', 'eastern_europe',
+            'middle_east', 'eastern_europe',
             'filter_corpus_A', 'filter_corpus_B'
         ])
         return cols
@@ -99,27 +96,32 @@ class AussdaLongDataFilter(AussdaDataFilter):
         cols = super().required_cols()
         cols.extend([
             'ID', 'fr_eco', 'fr_lab', 'fr_wel', 'fr_sec', 'fr_cul',
-            #'middle_east', 'eastern_europe',
+            'middle_east', 'eastern_europe',
             'filter_corpus_A', 'filter_corpus_B'
         ])
         return cols
 
-    def save(self) -> None:
+    def save(self) -> List[str]:
         dfa: pd.DataFrame = self.df[self.df['filter_corpus_A'] == 1]
         logger.info("Got CVS Aussda data size corpus A [%s].", dfa.shape[0])
         dfb: pd.DataFrame = self.df[self.df['filter_corpus_B'] == 1]
         logger.info("Got CVS Aussda data size corpus B [%s].", dfb.shape[0])
         dfab: pd.DataFrame = self.df[(self.df['filter_corpus_A'] == 1) & (self.df['filter_corpus_B'] == 1)]
         logger.info("Got CVS Aussda data size corpus AB [%s].", dfab.shape[0])
-        dfa.to_csv(os.path.join(self.args.data_out_dir, 'aussda_l_term_a.csv'), index=False)
-        dfb.to_csv(os.path.join(self.args.data_out_dir, 'aussda_l_term_b.csv'), index=False)
-        dfab.to_csv(os.path.join(self.args.data_out_dir, 'aussda_l_term_ab.csv'), index=False)
+
+        dfa_csv_file = os.path.join(self.target_dir_path, 'aussda_l_term_a.csv')
+        dfa.to_csv(dfa_csv_file, index=False)
+        dfb_csv_file = os.path.join(self.target_dir_path, 'aussda_l_term_b.csv')
+        dfb.to_csv(dfb_csv_file, index=False)
+        dfab_csv_file = os.path.join(self.target_dir_path, 'aussda_l_term_ab.csv')
+        dfab.to_csv(dfab_csv_file, index=False)
+        return [dfa_csv_file, dfb_csv_file, dfab_csv_file]
 
 
 class AussdaShortDataFilter(AussdaLongDataFilter):
     # Corpus B covers seven countries and 39 media outlets from 2013 to 2017
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> None:
+        super().__init__(input_path, target_dir_path, base_name, num_rows)
 
     def include_cols(self) -> List[str]:
         cols = super().include_cols()
@@ -133,14 +135,16 @@ class AussdaShortDataFilter(AussdaLongDataFilter):
         cols.remove('filter_corpus_B')
         return cols
 
-    def save(self) -> None:
+    def save(self) -> List[str]:
         logger.info("Got CVS Aussda short term data size corpus [%s].", self.df.shape[0])
-        self.df.to_csv(os.path.join(self.args.data_out_dir, 'aussda_s_term.csv'), index=False)
+        csv_file = os.path.join(self.target_dir_path, 'aussda_s_term.csv')
+        self.df.to_csv(csv_file, index=False)
+        return [csv_file]
 
 
 class AussdaManualDataFilter(AussdaDataFilter):
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> None:
+        super().__init__(input_path, target_dir_path, base_name, num_rows)
 
     def type_mapping(self) -> Dict[str, str]:
         tm = super().type_mapping()
@@ -177,21 +181,12 @@ class AussdaManualDataFilter(AussdaDataFilter):
         ])
         return cols
 
-    def save(self) -> None:
+    def save(self) -> List[str]:
         logger.info("Got CVS Aussda manual data size corpus [%s].", self.df.shape[0])
-        csv_path = os.path.join(self.args.data_out_dir, 'aussda.csv')
-        zip_path = os.path.join(self.args.data_out_dir, 'aussda.zip')
-        self.df.to_csv(csv_path, index=False)
-        if os.path.exists(zip_path):
-            os.remove(zip_path)
-        with neuroticla.utils.zip.AESZipFile(
-                zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
-        ) as myzip:
-            myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
-            myzip.setpassword(bytes(self.args.password, encoding='utf-8'))  # intentional
-            myzip.write(csv_path, 'aussda.csv')
-            myzip.close()
-        os.remove(csv_path)
+        csv_file = os.path.join(self.target_dir_path, 'aussda_manual.csv')
+        self.df.to_csv(csv_file, index=False)
+        return [csv_file]
+
 
 # Spain
 #   Print:  ABC, El Mundo, El Pais

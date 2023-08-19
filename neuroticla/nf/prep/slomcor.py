@@ -9,8 +9,8 @@ logger = logging.getLogger('nf.prep.slomcor')
 
 class SlomcorDataFilter(DataFilter):
 
-    def __init__(self, args) -> None:
-        super().__init__(args)
+    def __init__(self, input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> None:
+        super().__init__(input_path, target_dir_path, base_name, num_rows)
 
     def skip_rows(self, row) -> bool:
         return False
@@ -25,10 +25,14 @@ class SlomcorDataFilter(DataFilter):
             'title', 'body', 'published', 'country', 'source'
         ]
 
-    def save(self) -> None:
+    def save(self) -> List[str]:
         if 'middle' in self.args.input_file:
             logger.info("Got CVS Slomcor Middle-East data size corpus [%s].", len(self.df.index))
-            self.df.to_csv(os.path.join(self.args.data_out_dir, 'slomcor_middle_east.csv'), index=False)
+            csv_file = os.path.join(self.target_dir_path, 'slomcor_middle_east.csv')
+            self.df.to_csv(csv_file, index=False)
+            return [csv_file]
         else:
             logger.info("Got CVS Slomcor Ukraine data size corpus [%s].", len(self.df.index))
-            self.df.to_csv(os.path.join(self.args.data_out_dir, 'slomcor_ukraine.csv'), index=False)
+            csv_file = os.path.join(self.target_dir_path, 'slomcor_ukraine.csv')
+            self.df.to_csv(csv_file, index=False)
+            return [csv_file]

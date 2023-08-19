@@ -1,6 +1,7 @@
 import os
 import logging
 import pandas as pd
+import neuroticla.utils.zip
 
 from argparse import ArgumentParser
 from neuroticla.core.args import CommonArguments
@@ -12,21 +13,21 @@ from .slomcor import SlomcorDataFilter
 logger = logging.getLogger('nf.prep')
 
 
-def get_data_filter(arg) -> DataFilter:
+def get_data_filter(input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> DataFilter:
     df: pd.DataFrame = pd.read_csv(
-        arg.input_path,
+        input_path,
         encoding='utf-8',
         nrows=10
     )
     logger.info("Got CVS columns after examine: %s", df.columns)
     if 'origin_ID' in df:
-        return AussdaLongDataFilter(arg)
+        return AussdaLongDataFilter(input_path, target_dir_path, base_name, num_rows)
     elif 'ID_origin' in df:
-        return AussdaShortDataFilter(arg)
+        return AussdaShortDataFilter(input_path, target_dir_path, base_name, num_rows)
     elif 'reminderid_doc_id' in df:
-        return AussdaManualDataFilter(arg)
+        return AussdaManualDataFilter(input_path, target_dir_path, base_name, num_rows)
     else:
-        return SlomcorDataFilter(arg)
+        return SlomcorDataFilter(input_path, target_dir_path, base_name, num_rows)
 
 
 def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
@@ -37,21 +38,35 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
         '-p', '--password', type=str, help="Zip file password", required=True
     )
     parser.add_argument(
-        'input_file',
-        help='Corpora file (default: %(default)s)',
-        type=str,
-        default='aussda_manual.csv'
+        'corpora', help='Corpora files (prefix) to prep.', nargs='+',
+        choices=['aussda', 'slomcor']
     )
 
 
 def main(arg) -> int:
     logger.debug("Starting data preparation")
-    if not os.path.exists(arg.input_file):
-        arg.input_path = os.path.join(arg.data_in_dir, arg.input_file)
-
-    df: DataFilter = get_data_filter(arg)
-    df.load()
-    df.filter()
-    df.save()
+    for corpora in arg.corpora:
+        corpora_files = []
+        for f in os.listdir(arg.data_in_dir):
+            if not f.startswith(corpora):
+                continue
+            corpus_file = os.path.join(arg.data_in_dir, f)
+            df: DataFilter = get_data_filter(corpus_file, arg.data_out_dir, corpora, arg.num_rows)
+            df.load()
+            df.filter()
+            corpora_files.extend(df.save())
+        if not corpora_files:
+            continue
+        zip_path = os.path.join(arg.data_out_dir, corpora + '.zip')
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+        with neuroticla.utils.zip.AESZipFile(
+                zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
+        ) as myzip:
+            myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
+            myzip.setpassword(bytes(arg.password, encoding='utf-8'))  # intentional
+            for f in corpora_files:
+                myzip.write(f, os.path.basename(f))
+            myzip.close()
 
     return 0

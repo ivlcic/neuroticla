@@ -12,7 +12,7 @@ logger = logging.getLogger('ner.test')
 
 
 def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.test(nrcla_module, parser)
+    CommonArguments.test(parser)
     add_common_test_train_args(nrcla_module, parser)
     parser.add_argument(
         'model_name', help='Model name or path to test.', type=str, default=None
