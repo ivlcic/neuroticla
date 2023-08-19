@@ -120,7 +120,7 @@ Here is the fastest and smallest possible usage example (approx 1h on 1080 Ti):
 ./ner train --tqdm -l 2e-5 -e 40 -b 20 xlmrb sr
 
 # output the model evaluation against the test data
-./ner test --tqdm -b 20 xlmrb sr
+./ner test --tqdm -b 20 xlmrb-sr sr
 
 # use the model for inference
 ./ner infer xlmrb-sr sr "Pa dali je to Majkel Đekson. Majke mi da jeste! I to baš tu usred Beograda!"
