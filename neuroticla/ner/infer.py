@@ -12,7 +12,7 @@ logger = logging.getLogger('ner.infer')
 def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
     parser.add_argument(
-        'model_name', help='Model name.', type=str, default=None
+        'model_name', help='Model name or path.', type=str, default=None
     )
     parser.add_argument(
         'lang', help='Language of the text.',
@@ -24,11 +24,7 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
 
 
 def main(arg) -> int:
-    compute_model_name(arg)
-
-    result_path = os.path.join(arg.result_dir, arg.model_name)
-    if not os.path.exists(result_path):
-        os.makedirs(result_path)
+    result_path = compute_model_path(arg)
 
     mc: TokenClassifyModel = TokenClassifyModel(
         result_path,

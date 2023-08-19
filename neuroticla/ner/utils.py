@@ -15,9 +15,6 @@ def add_common_test_train_args(nrcla_module: str, parser: ArgumentParser) -> Non
     CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
     parser.add_argument(
-        '-n', '--model_name', help='Target model name.', type=str, default=None
-    )
-    parser.add_argument(
         '--no_misc', help='Remove MISC tag (replace i with "O").', action='store_true', default=False
     )
     parser.add_argument(
@@ -29,23 +26,16 @@ def add_common_test_train_args(nrcla_module: str, parser: ArgumentParser) -> Non
     parser.add_argument(
         '--tqdm', help='Enable TDQM.', action='store_true', default=False
     )
-    parser.add_argument('pretrained_model', help='Pretrained model to use for fine tuning',
-                        choices=['mcbert', 'xlmrb', 'xlmrl'])
-    parser.add_argument(
-        'langs', help='Languages to use.', nargs='+',
-        choices=get_all_languages()
-    )
 
 
-def compute_model_name(arg) -> None:
-    corpora_prefix = ''
-    if hasattr(arg, 'langs'):
-        corpora_prefix = '_'.join(arg.langs)
-    if arg.model_name is None:
-        model_name = arg.pretrained_model + '-' + corpora_prefix
-        if arg.no_misc:
-            model_name += '-nomisc'
-        arg.model_name = model_name
+def compute_model_path(arg) -> str:
+    if not os.path.exists(arg.model_name):
+        result_path = os.path.join(arg.result_dir, arg.model_name)
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+    else:
+        result_path = arg.model_name
+    return result_path
 
 
 def get_data_paths_prefixes(arg) -> List[str]:

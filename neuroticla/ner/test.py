@@ -14,14 +14,17 @@ logger = logging.getLogger('ner.test')
 def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.test(nrcla_module, parser)
     add_common_test_train_args(nrcla_module, parser)
+    parser.add_argument(
+        'model_name', help='Model name or path to test.', type=str, default=None
+    )
+    parser.add_argument(
+        'langs', help='Languages to test against.', nargs='+',
+        choices=get_all_languages()
+    )
 
 
 def main(arg) -> int:
-    compute_model_name(arg)
-
-    result_path = os.path.join(arg.result_dir, arg.model_name)
-    if not os.path.exists(result_path):
-        os.makedirs(result_path)
+    result_path = compute_model_path(arg)
 
     mc: TokenClassifyModel = TokenClassifyModel(
         result_path,

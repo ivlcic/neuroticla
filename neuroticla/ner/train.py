@@ -16,14 +16,26 @@ logger = logging.getLogger('ner.train')
 def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.train(nrcla_module, parser)
     add_common_test_train_args(nrcla_module, parser)
+    parser.add_argument(
+        '-n', '--model_name', help='Target model name.', type=str, default=None
+    )
+    parser.add_argument('pretrained_model', help='Pretrained model to use for fine tuning',
+                        choices=['mcbert', 'xlmrb', 'xlmrl'])
+    parser.add_argument(
+        'langs', help='Languages to use.', nargs='+',
+        choices=get_all_languages()
+    )
 
 
 def main(arg) -> int:
-    compute_model_name(arg)
+    corpora_prefix = '_'.join(arg.langs)
+    if arg.model_name is None:
+        model_name = arg.pretrained_model + '-' + corpora_prefix
+        if arg.no_misc:
+            model_name += '-nomisc'
+        arg.model_name = model_name
 
-    result_path = os.path.join(arg.result_dir, arg.model_name)
-    if not os.path.exists(result_path):
-        os.makedirs(result_path)
+    result_path = compute_model_path(arg)
 
     mc = TokenClassifyModel(
         ModelContainer.model_name_map[arg.pretrained_model],
