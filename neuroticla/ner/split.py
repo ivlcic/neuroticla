@@ -13,22 +13,7 @@ logger = logging.getLogger('ner.split')
 
 
 def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.processed_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
-    CommonArguments.split_data_dir(nrcla_module, parser, ('-o', '--data_out_dir'))
-    CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
-    CommonArguments.data_split(parser)
-    parser.add_argument(
-        '-u', '--subsets', type=str, default=None,
-        help="Subsets of the files to use for each language (file name contains any of the comma separated strings)",
-    )
-    parser.add_argument(
-        '-p', '--password', type=str, default='showeffort',
-        help="Zip file password",
-    )
-    parser.add_argument(
-        '-r', '--non_reproducible_shuffle', action='store_true', default=False,
-        help='Non reproducible data shuffle.',
-    )
+    CommonArguments.split(nrcla_module, parser, 'showeffort')
     parser.add_argument(
         'langs', help='Language files to split.', nargs='+',
         choices=get_all_languages()
@@ -36,43 +21,19 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
 
 
 def main(arg) -> int:
-    files = {}
     for lang in arg.langs:
-        lang_dir_path = os.path.join(arg.data_out_dir, lang)
-        if not os.path.exists(lang_dir_path):
-            os.makedirs(lang_dir_path)
-        lang_zip_path = os.path.join(arg.data_in_dir, lang + '.zip')
-        with neuroticla.utils.zip.AESZipFile(
-                lang_zip_path, 'a',
-                compression=neuroticla.utils.zip.ZIP_BZIP2,
-                compresslevel=9
-        ) as myzip:
-            myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
-            myzip.setpassword(bytes(arg.password, encoding='utf-8'))
-            myzip.extractall(lang_dir_path)
-        files[lang] = []
-        for f in os.listdir(lang_dir_path):
-            if not f.endswith('.csv'):
-                continue
-            if arg.subsets is not None:
-                for s in arg.subsets.split(','):
-                    if s in f:
-                        files[lang].append(os.path.join(lang_dir_path, f))
-            else:
-                files[lang].append(os.path.join(lang_dir_path, f))
-        if arg.non_reproducible_shuffle:
-            training_data, evaluation_data, test_data = DataSplit.split(arg.data_split, lang, files[lang])
-        else:
-            training_data, evaluation_data, test_data = DataSplit.split(arg.data_split, lang, files[lang], 2611)
-        target_path = os.path.join(arg.data_out_dir, lang)
-        training_data.to_csv(
-            target_path + '.train.csv', index=False, encoding='utf-8'
+        files = DataSplit.extract(
+            os.path.join(arg.data_in_dir, lang + '.zip'),
+            arg.password,
+            arg.subsets.split(',') if arg.subsets else None,
+            arg.data_out_dir
         )
-        evaluation_data.to_csv(
-            target_path + '.eval.csv', index=False, encoding='utf-8'
-        )
-        test_data.to_csv(
-            target_path + '.test.csv', index=False, encoding='utf-8'
+        DataSplit.file_split(
+            lang,
+            files,
+            arg.data_out_dir,
+            arg.data_split,
+            arg.non_reproducible_shuffle
         )
 
     return 0

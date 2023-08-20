@@ -109,11 +109,11 @@ class AussdaLongDataFilter(AussdaDataFilter):
         dfab: pd.DataFrame = self.df[(self.df['filter_corpus_A'] == 1) & (self.df['filter_corpus_B'] == 1)]
         logger.info("Got CVS Aussda data size corpus AB [%s].", dfab.shape[0])
 
-        dfa_csv_file = os.path.join(self.target_dir_path, 'aussda_l_term_a.csv')
+        dfa_csv_file = os.path.join(self.target_dir_path, 'aussda_long_a.csv')
         dfa.to_csv(dfa_csv_file, index=False)
-        dfb_csv_file = os.path.join(self.target_dir_path, 'aussda_l_term_b.csv')
+        dfb_csv_file = os.path.join(self.target_dir_path, 'aussda_long_b.csv')
         dfb.to_csv(dfb_csv_file, index=False)
-        dfab_csv_file = os.path.join(self.target_dir_path, 'aussda_l_term_ab.csv')
+        dfab_csv_file = os.path.join(self.target_dir_path, 'aussda_long_ab.csv')
         dfab.to_csv(dfab_csv_file, index=False)
         return [dfa_csv_file, dfb_csv_file, dfab_csv_file]
 
@@ -137,7 +137,7 @@ class AussdaShortDataFilter(AussdaLongDataFilter):
 
     def save(self) -> List[str]:
         logger.info("Got CVS Aussda short term data size corpus [%s].", self.df.shape[0])
-        csv_file = os.path.join(self.target_dir_path, 'aussda_s_term.csv')
+        csv_file = os.path.join(self.target_dir_path, 'aussda_short.csv')
         self.df.to_csv(csv_file, index=False)
         return [csv_file]
 

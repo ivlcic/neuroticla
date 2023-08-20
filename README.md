@@ -254,3 +254,14 @@ Which is based on
 ```
 
 ## News Framing Detection
+
+### Prep
+```
+./nf prep aussda -p *******
+./nf prep slomcor -p *******
+```
+
+### Split
+```
+./nf split -u manual aussda -p *******
+```

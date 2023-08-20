@@ -160,6 +160,29 @@ class CommonArguments:
         )
 
     @classmethod
+    def split(cls, package: str, parser: ArgumentParser, default_password: str = None):
+        CommonArguments.processed_data_dir(package, parser, ('-i', '--data_in_dir'))
+        CommonArguments.split_data_dir(package, parser, ('-o', '--data_out_dir'))
+        CommonArguments.tmp_dir(package, parser, ('-t', '--tmp_dir'))
+        CommonArguments.data_split(parser)
+        parser.add_argument(
+            '-u', '--subsets', type=str, default=None,
+            help="Subsets of the files to use for each corpora (file name contains any of the comma separated strings)",
+        )
+        if default_password:
+            parser.add_argument(
+                '-p', '--password', type=str, default=default_password, help="Zip file password"
+            )
+        else:
+            parser.add_argument(
+                '-p', '--password', type=str, required=True, help="Zip file password"
+            )
+        parser.add_argument(
+            '-r', '--non_reproducible_shuffle', action='store_true', default=False,
+            help='Non reproducible data shuffle.',
+        )
+
+    @classmethod
     def train(cls, parser: ArgumentParser):
         parser.add_argument(
             '-b', '--batch', help='Batch size.', type=int, default=32

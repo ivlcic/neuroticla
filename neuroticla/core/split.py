@@ -3,7 +3,10 @@ import logging
 import numpy as np
 import pandas as pd
 
+import neuroticla.utils.zip
+
 from typing import Dict, List
+
 logger = logging.getLogger('core.split')
 
 
@@ -82,3 +85,56 @@ class DataSplit:
             logger.info("Loaded corpus [%s]", path_prefix)
 
         return pd.concat(training_sets), pd.concat(evaluation_sets), pd.concat(test_sets)
+
+    @classmethod
+    def extract(cls, zip_path: str, password: str, subsets: List[str], target_dir: str) -> List[str]:
+        corpus = os.path.splitext(os.path.basename(zip_path))[0]
+        corpus_dir_path = os.path.join(target_dir, corpus)
+        if not os.path.exists(corpus_dir_path):
+            os.makedirs(corpus_dir_path)
+
+        with neuroticla.utils.zip.AESZipFile(
+                zip_path, 'r',
+                compression=neuroticla.utils.zip.ZIP_BZIP2,
+                compresslevel=9
+        ) as myzip:
+            myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
+            myzip.setpassword(bytes(password, encoding='utf-8'))
+            if subsets is not None:
+                for info in myzip.infolist():
+                    for s in subsets:
+                        if s in info.filename:
+                            myzip.extract(info, corpus_dir_path)
+            else:
+                myzip.extractall(corpus_dir_path)
+        files = []
+        for f in os.listdir(corpus_dir_path):
+            if not f.endswith('.csv'):
+                continue
+            if subsets is not None:
+                for s in subsets:
+                    if s in f:
+                        files.append(os.path.join(corpus_dir_path, f))
+            else:
+                files.append(os.path.join(corpus_dir_path, f))
+
+        return files
+
+    @classmethod
+    def file_split(cls, corpus: str, files: List[str], target_dir: str, data_split: str,
+                   non_reproducible_shuffle: bool = True) -> None:
+
+        if non_reproducible_shuffle:
+            training_data, evaluation_data, test_data = cls.split(data_split, corpus, files)
+        else:
+            training_data, evaluation_data, test_data = cls.split(data_split, corpus, files, 2611)
+        target_path = os.path.join(target_dir, corpus)
+        training_data.to_csv(
+            target_path + '.train.csv', index=False, encoding='utf-8'
+        )
+        evaluation_data.to_csv(
+            target_path + '.eval.csv', index=False, encoding='utf-8'
+        )
+        test_data.to_csv(
+            target_path + '.test.csv', index=False, encoding='utf-8'
+        )
