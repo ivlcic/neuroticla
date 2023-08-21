@@ -6,7 +6,7 @@ import numpy as np
 
 from typing import List, Dict
 from sklearn.metrics.pairwise import cosine_similarity
-from ..esdl.esdl import Article
+from ..esdl.article import Article
 from .api import call_textonic
 
 logger = logging.getLogger('ttnx.cluster')

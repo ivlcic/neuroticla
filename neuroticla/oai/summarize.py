@@ -4,7 +4,7 @@ import openai
 import tiktoken
 
 from typing import List
-from ..esdl.esdl import Article
+from ..esdl.article import Article
 from .tokenize import create_chunks
 from .constants import DEFAULT_MODEL, DEFAULT_S_REPLACE, MODEL_TOKENS, MODEL_ABBREV
 

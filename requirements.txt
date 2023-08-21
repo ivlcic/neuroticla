@@ -7,6 +7,7 @@ torch>=2.0.1
 tiktoken>=0.4.0
 tokenizers>=0.13.3
 transformers>=4.31.0
+sentence_transformers>=2.2.2
 openai>=0.27.8
 accelerate>=0.20.1
 reldi-tokeniser>=1.0.3

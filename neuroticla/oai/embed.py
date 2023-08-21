@@ -3,7 +3,7 @@ import openai
 
 from typing import List
 
-from ..esdl.esdl import Article
+from ..esdl.article import Article
 from .tokenize import truncate_text_tokens
 from .constants import EMBEDDING_ENCODING, EMBEDDING_CTX_LENGTH
 

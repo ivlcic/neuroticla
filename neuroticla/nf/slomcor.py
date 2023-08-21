@@ -2,7 +2,8 @@ import logging
 from argparse import ArgumentParser
 from typing import List
 
-from ..esdl.esdl import Esdl, Article
+from ..esdl import Elastika
+from ..esdl.article import Article
 
 logger = logging.getLogger('nf.slomcor')
 
@@ -40,7 +41,7 @@ def main(arg) -> int:
     uk_date_start = '2022-02-01T00:00:00'
     uk_date_end = '2023-03-18T00:00:00'
 
-    esdl = Esdl()
+    esdl = Elastika()
     esdl.limit(10000)
     esdl.filter_country('SI')
     esdl.filter_text(prefixes)
