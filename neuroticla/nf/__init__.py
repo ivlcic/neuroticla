@@ -7,6 +7,7 @@ NRCLA_MODULE = ModuleDescriptor(
     ModuleArguments([
         CommandArguments('prep', 'Prepares the data'),
         CommandArguments('split', 'Splits the data'),
-        CommandArguments('test', 'Internal tests')
+        CommandArguments('test', 'Internal tests'),
+        CommandArguments('slomcor', 'Retrieve Slovenian Migration Corpus')
     ])
 )

@@ -1,26 +1,51 @@
 from __future__ import annotations
 
 import importlib
-import logging
+import logging.config
 import os
 from typing import Type
 
 from .args import ModuleArguments, ArgumentParser
 
 
-def fmt_filter(record):
-    record.levelname = '[%s]' % record.levelname
-    record.funcName = '[%s]' % record.funcName
-    record.lineno = '[%s]' % record.lineno
-    return True
+class DefaultLogFilter(logging.Filter):
+    def filter(self, record):
+        record.levelname = '[%s]' % record.levelname
+        record.funcName = '[%s]' % record.funcName
+        record.lineno = '[%s]' % record.lineno
+        return True
 
 
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-7s %(name)s %(lineno)-3s: %(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
-logging.getLogger().addFilter(fmt_filter)
-logger = logging.getLogger('neuroticla.core')
+LOGGING = {
+    'version': 1,
+    'formatters': {
+        'my_formatter': {
+          'format': '%(asctime)s %(levelname)-7s %(name)s %(lineno)-3s: %(message)s',
+          'datefmt': '%Y-%m-%d %H:%M:%S'
+        }
+    },
+    'filters': {
+        'myfilter': {
+            '()': DefaultLogFilter
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'filters': ['myfilter'],
+            'formatter': 'my_formatter',
+        }
+    },
+    'root': {
+        'level': 'INFO',
+        'filters': ['myfilter'],
+        'handlers': ['console']
+    },
+}
+
+logging.config.dictConfig(LOGGING)
+
+logger = logging.getLogger('core')
 
 
 class ModuleDescriptor:
