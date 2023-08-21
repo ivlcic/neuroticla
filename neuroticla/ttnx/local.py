@@ -12,7 +12,7 @@ from torch import Tensor
 from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer, AutoModel
 from transformers.tokenization_utils_base import BatchEncoding
 
-from ..esdl.articles import Article
+from ..esdl.article import Article
 from .constants import MODEL_CACHE_DIR, LOCAL_AVG_SQUEEZE, LOCAL_WEIGHT_NEG_EXP, LOCAL_WEIGHT_NEG_LIN, \
     MODEL_NAME_MAP, LOCAL_WEIGHT_NONE
 
