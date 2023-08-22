@@ -1,10 +1,5 @@
-import os
-
-from argparse import ArgumentParser
-from typing import List, Dict
-
 from neuroticla.core import ModuleDescriptor
-from neuroticla.core.args import ModuleArguments, CommandArguments, CommonArguments
+from neuroticla.core.args import ModuleArguments, CommandArguments
 
 NRCLA_MODULE = ModuleDescriptor(
     'ner',

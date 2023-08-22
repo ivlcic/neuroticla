@@ -8,6 +8,7 @@ NRCLA_MODULE = ModuleDescriptor(
         CommandArguments('prep', 'Prepares the data'),
         CommandArguments('split', 'Splits the data'),
         CommandArguments('train', 'Train for the news framing detection', multi_action=True),
-        CommandArguments('unittest', 'Internal tests')
+        CommandArguments('unittest', 'Internal tests'),
+        CommandArguments('slomcor', 'Retrieve Slovenian Migration Corpus')
     ])
 )
