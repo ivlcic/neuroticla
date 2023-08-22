@@ -10,7 +10,7 @@ def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
     pass
 
 
-def test_tokenizer(args) -> int:
+def unittest_tokenizer(args) -> int:
     logger.debug("main")
     args.lang = 'sl'
     tokenizer = get_obeliks_tokenizer(args)
