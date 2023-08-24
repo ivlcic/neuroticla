@@ -32,6 +32,16 @@ def get_data_path_prefix(arg) -> List[str]:
     return data_paths
 
 
+def compute_model_path(arg) -> str:
+    if not os.path.exists(arg.model_name):
+        result_path = os.path.join(arg.result_dir, arg.model_name)
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+    else:
+        result_path = arg.model_name
+    return result_path
+
+
 def add_common_test_train_args(nrcla_module: str, parser: ArgumentParser) -> None:
     CommonArguments.split_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
     CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
