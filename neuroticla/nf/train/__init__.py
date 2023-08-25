@@ -1,4 +1,3 @@
-from neuroticla.core.args import CommonArguments
 from neuroticla.nf.utils import *
 
 from .binrel import train as binrel_train
