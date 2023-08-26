@@ -3,7 +3,7 @@ import os
 from argparse import ArgumentParser
 from typing import List, Dict
 
-from neuroticla.core.args import CommonArguments
+from ..core.args import CommonArguments
 
 
 def get_all_languages():
@@ -14,6 +14,9 @@ def add_common_test_train_args(nrcla_module: str, parser: ArgumentParser) -> Non
     CommonArguments.split_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
     CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
+    parser.add_argument(
+        '--max_seq_len', help='Max sentence length in sub-word tokens.', type=int, default=256
+    )
     parser.add_argument(
         '--no_misc', help='Remove MISC tag (replace i with "O").', action='store_true', default=False
     )

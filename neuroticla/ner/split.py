@@ -1,13 +1,10 @@
-import os
-import shutil
 import logging
-
-import neuroticla.utils.zip
-
+import os
 from argparse import ArgumentParser
-from neuroticla.core.args import CommonArguments
-from neuroticla.core.split import DataSplit
-from neuroticla.ner.utils import get_all_languages
+
+from ..core.args import CommonArguments
+from ..core.split import DataSplit
+from ..ner.utils import get_all_languages
 
 logger = logging.getLogger('ner.split')
 

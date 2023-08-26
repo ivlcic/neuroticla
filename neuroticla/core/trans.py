@@ -12,7 +12,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Auto
     PreTrainedModel, PreTrainedTokenizer, TrainingArguments, Trainer
 from sklearn.metrics import classification_report, accuracy_score, hamming_loss, multilabel_confusion_matrix, f1_score
 
-from .labels import Labeler, MultiLabeler
+from .labels import Labeler, MultiLabeler, BinaryLabeler
 from .dataset import ClassifyDataset
 
 logger = logging.getLogger('core.transformers')
@@ -42,10 +42,10 @@ class ModelContainer(torch.nn.Module):
                 target_file_path = os.path.join(result_path, f)
                 shutil.move(source_file_path, target_file_path)
                 moved = True
-                logger.info("Moved [%s] -> [%s].", source_file_path, target_file_path)
+                logger.info('Moved [%s] -> [%s].', source_file_path, target_file_path)
             if moved:
                 shutil.rmtree(checkpoint_path)
-                logger.info("Removed checkpoint dir [%s].", checkpoint_path)
+                logger.info('Removed checkpoint dir [%s].', checkpoint_path)
 
     def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
         super().__init__()
@@ -58,7 +58,7 @@ class ModelContainer(torch.nn.Module):
             model_name_or_path, cache_dir=cache_model_dir
         )
         use_cuda = torch.cuda.is_available()
-        device = torch.device("cuda" if use_cuda else "cpu")
+        device = torch.device('cuda' if use_cuda else 'cpu')
         self._device = device
 
     def model(self):
@@ -100,12 +100,12 @@ class ModelContainer(torch.nn.Module):
             tokenizer=self._tokenizer,
             compute_metrics=self.compute_metrics
         )
-        logger.debug("Starting training...")
+        logger.debug('Starting training...')
         trainer.train()
-        logger.info("Training done.")
-        logger.debug("Starting evaluation...")
+        logger.info('Training done.')
+        logger.debug('Starting evaluation...')
         trainer.evaluate()
-        logger.info("Evaluation done.")
+        logger.info('Evaluation done.')
 
     def test(self, training_args: TrainingArguments, test_set: ClassifyDataset):
         self._model.eval()
@@ -124,7 +124,7 @@ class TokenClassifyModel(ModelContainer):
     def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
         super(TokenClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir)
 
-        self._metric = evaluate.load("seqeval")
+        self._metric = evaluate.load('seqeval')
         self._model = AutoModelForTokenClassification.from_pretrained(
             model_name_or_path, cache_dir=cache_model_dir, num_labels=labeler.mun_labels(),
             id2label=labeler.ids2labels(), label2id=labeler.labels2ids()
@@ -154,14 +154,14 @@ class TokenClassifyModel(ModelContainer):
         )
         if test:
             return results
-        logger.info("Batch eval: %s", results)
+        logger.info('Batch eval: %s', results)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
         return {
-            "precision": results["overall_precision"],
-            "recall": results["overall_recall"],
-            "f1": results["overall_f1"],
-            "accuracy": results["overall_accuracy"],
+            'precision': results['overall_precision'],
+            'recall': results['overall_recall'],
+            'f1': results['overall_f1'],
+            'accuracy': results['overall_accuracy'],
         }
 
     def infer(self, word_list: Union[str, List[str]]) -> List[Dict[str, str]]:
@@ -169,16 +169,16 @@ class TokenClassifyModel(ModelContainer):
         is_split = False if isinstance(word_list, str) else True
         model_inputs = self._tokenizer(
             word_list,
-            return_tensors="pt",
+            return_tensors='pt',
             truncation=False,
             is_split_into_words=is_split,
         )
-        if len(model_inputs["input_ids"][0]) > self._tokenizer.model_max_length:
-            sent = " ".join(word_list)
-            logger.warning(f"Truncated long input sentence:\n{sent}")
+        if len(model_inputs['input_ids'][0]) > self._tokenizer.model_max_length:
+            sent = ' '.join(word_list)
+            logger.warning(f'Truncated long input sentence:\n{sent}')
             model_inputs = self._tokenizer(
                 word_list,
-                return_tensors="pt",
+                return_tensors='pt',
                 truncation=True,
                 is_split_into_words=is_split,
             )
@@ -263,20 +263,22 @@ class SeqClassifyModel(ModelContainer):
             y_pred = decoded_predictions
             y_true = decoded_labels
             labels = self._labeler.for_binary_eval()
+        if isinstance(self._labeler, BinaryLabeler):
+            labels = self._labeler.for_binary_eval()
 
         results = self._metric.compute(predictions=y_pred, references=y_true, labels=labels)
         if test:
             if isinstance(self._labeler, MultiLabeler):
                 pass
             return results
-        logger.info("Batch eval: %s", results)
+        logger.info('Batch eval: %s', results)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
         return {
-            "precision": results['macro avg']["precision"],
-            "recall": results['macro avg']["recall"],
-            "f1": results['macro avg']["f1-score"],
-            "accuracy": results['accuracy']
+            'precision': results['macro avg']['precision'],
+            'recall': results['macro avg']['recall'],
+            'f1': results['macro avg']['f1-score'],
+            'accuracy': results['accuracy']
         }
 
     def infer(self, word_list: Union[str, List[str]]) -> str:
@@ -284,7 +286,7 @@ class SeqClassifyModel(ModelContainer):
         is_split = False if isinstance(word_list, str) else True
         model_inputs = self._tokenizer(
             word_list,
-            return_tensors="pt",
+            return_tensors='pt',
             truncation=True,
             is_split_into_words=is_split
         )

@@ -2,8 +2,8 @@ import os
 import logging
 
 from argparse import ArgumentParser
-from neuroticla.core.args import CommonArguments
-from neuroticla.core.split import DataSplit
+from ..core.args import CommonArguments
+from ..core.split import DataSplit
 
 logger = logging.getLogger('nf.split')
 

@@ -5,8 +5,8 @@ import re
 import shutil
 from typing import Dict, List, Any
 
-import neuroticla.core.labels
-import neuroticla.utils.zip
+from ...core.labels import Labeler
+from ...utils.zip import AESZipFile, ZIP_BZIP2, WZ_AES
 
 logger = logging.getLogger('ner.prep.conll')
 
@@ -79,7 +79,7 @@ def to_csv(args, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
     if map_filter is None:
         map_filter = {}
 
-    labeler = neuroticla.core.labels.Labeler(
+    labeler = Labeler(
         os.path.join(args.data_out_dir, 'tags.csv')
     )
 
@@ -179,10 +179,10 @@ def to_csv(args, ner_tag_idx: int, map_filter: Dict[str, Any] = None):
     zip_path = os.path.join(args.data_out_dir, args.lang + '.zip')
     if os.path.exists(zip_path):
         os.remove(zip_path)
-    with neuroticla.utils.zip.AESZipFile(
-            zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
+    with AESZipFile(
+            zip_path, 'a', compression=ZIP_BZIP2, compresslevel=9
     ) as myzip:
-        myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
+        myzip.setencryption(WZ_AES, nbits=256)
         myzip.setpassword(bytes(args.password, encoding='utf-8'))  # intentional
         myzip.write(conll_fname, args.target_base_name + '.conll')
         myzip.write(json_fname, args.target_base_name + '.json')

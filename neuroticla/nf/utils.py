@@ -1,10 +1,9 @@
-import os
 import logging
-
+import os
 from argparse import ArgumentParser
-from typing import List, Dict
+from typing import List
 
-from neuroticla.core.args import CommonArguments
+from ..core.args import CommonArguments
 
 logger = logging.getLogger('nf.utils')
 
@@ -32,6 +31,16 @@ def get_data_path_prefix(arg) -> List[str]:
     return data_paths
 
 
+def compute_model_name(arg, labels: List[str] = None) -> str:
+    if arg.model_name is not None:
+        return arg.model_name
+    l_str = ''
+    if labels is not None:
+        l_str = '-' + '_'.join(labels)
+    m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}-{arg.corpora}{l_str}'
+    return m
+
+
 def compute_model_path(arg) -> str:
     if not os.path.exists(arg.model_name):
         result_path = os.path.join(arg.result_dir, arg.model_name)
@@ -46,6 +55,9 @@ def add_common_test_train_args(nrcla_module: str, parser: ArgumentParser) -> Non
     CommonArguments.split_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
     CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
+    parser.add_argument(
+        '--max_seq_len', help='Max sub-word tokens length.', type=int, default=512
+    )
     parser.add_argument(
         '--tqdm', help='Enable TDQM.', action='store_true', default=False
     )

@@ -11,8 +11,8 @@ from .cnec import clean as cnec_clean
 
 from argparse import ArgumentParser
 from typing import Dict, List, Any
-from neuroticla.core.args import CommonArguments
-from neuroticla.ner.utils import get_all_languages
+from ...core.args import CommonArguments
+from ...ner.utils import get_all_languages
 
 logger = logging.getLogger('ner.prep')
 

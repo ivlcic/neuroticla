@@ -265,3 +265,9 @@ Which is based on
 ```
 ./nf split -u manual aussda -p *******
 ```
+
+### Train
+```
+./nf train binrel --tqdm -e 40 -b 20 -u eco mcbert aussda_manual
+./nf train binrel --tqdm -e 40 -b 20 -u eco xlmrb aussda_manual
+```

@@ -2,11 +2,11 @@ import logging
 
 from transformers import TrainingArguments
 
-from neuroticla.core.dataset import TokenClassifyDataset
-from neuroticla.core.labels import Labeler
-from neuroticla.core.split import DataSplit
-from neuroticla.core.trans import TokenClassifyModel
-from neuroticla.ner.utils import *
+from ..core.dataset import TokenClassifyDataset
+from ..core.labels import Labeler
+from ..core.split import DataSplit
+from ..core.trans import TokenClassifyModel
+from ..ner.utils import *
 
 logger = logging.getLogger('ner.test')
 
@@ -44,7 +44,9 @@ def main(arg) -> int:
     logger.info("Starting test set evaluation...")
 
     _, _, test_data = DataSplit.load(get_data_paths_prefixes(arg))
-    test_set = TokenClassifyDataset(mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, 'ner', 'sentence')
+    test_set = TokenClassifyDataset(
+        mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, 'ner', 'sentence'
+    )
     results = mc.test(testing_args, test_set)
     logger.info("Test set evaluation results:")
     logger.info("%s", results)

@@ -3,9 +3,9 @@ import logging
 import numpy as np
 import pandas as pd
 
-import neuroticla.utils.zip
-
 from typing import Dict, List
+
+from ..utils.zip import AESZipFile, ZIP_BZIP2, WZ_AES
 
 logger = logging.getLogger('core.split')
 
@@ -93,12 +93,12 @@ class DataSplit:
         if not os.path.exists(corpus_dir_path):
             os.makedirs(corpus_dir_path)
 
-        with neuroticla.utils.zip.AESZipFile(
+        with AESZipFile(
                 zip_path, 'r',
-                compression=neuroticla.utils.zip.ZIP_BZIP2,
+                compression=ZIP_BZIP2,
                 compresslevel=9
         ) as myzip:
-            myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
+            myzip.setencryption(WZ_AES, nbits=256)
             myzip.setpassword(bytes(password, encoding='utf-8'))
             if subsets is not None:
                 for info in myzip.infolist():

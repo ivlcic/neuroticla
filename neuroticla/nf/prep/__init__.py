@@ -1,11 +1,11 @@
 import os
 import logging
 import pandas as pd
-import neuroticla.utils.zip
 
 from argparse import ArgumentParser
-from neuroticla.core.args import CommonArguments
 
+from ...core.args import CommonArguments
+from ...utils.zip import AESZipFile, ZIP_BZIP2, WZ_AES
 from .filter import DataFilter
 from .aussda import AussdaLongDataFilter, AussdaShortDataFilter, AussdaManualDataFilter
 from .slomcor import SlomcorDataFilter
@@ -60,14 +60,14 @@ def main(arg) -> int:
         zip_path = os.path.join(arg.data_out_dir, corpora + '.zip')
         if os.path.exists(zip_path):
             os.remove(zip_path)
-        with neuroticla.utils.zip.AESZipFile(
-                zip_path, 'a', compression=neuroticla.utils.zip.ZIP_BZIP2, compresslevel=9
-        ) as myzip:
-            myzip.setencryption(neuroticla.utils.zip.WZ_AES, nbits=256)
-            myzip.setpassword(bytes(arg.password, encoding='utf-8'))  # intentional
+        with AESZipFile(
+                zip_path, 'a', compression=ZIP_BZIP2, compresslevel=9
+        ) as tmp_zip:
+            tmp_zip.setencryption(WZ_AES, nbits=256)
+            tmp_zip.setpassword(bytes(arg.password, encoding='utf-8'))  # intentional
             for f in corpora_files:
-                myzip.write(f, os.path.basename(f))
-            myzip.close()
+                tmp_zip.write(f, os.path.basename(f))
+            tmp_zip.close()
         for f in corpora_files:
             os.remove(f)
 

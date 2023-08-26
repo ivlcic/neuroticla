@@ -1,14 +1,13 @@
-import json
 import logging
 
 from transformers import TrainingArguments
 
-from neuroticla.core.dataset import TokenClassifyDataset
-from neuroticla.core.json import NpEncoder
-from neuroticla.core.labels import Labeler
-from neuroticla.core.split import DataSplit
-from neuroticla.core.trans import TokenClassifyModel, ModelContainer
-from neuroticla.ner.utils import *
+from ..core.dataset import TokenClassifyDataset
+from ..core.labels import Labeler
+from ..core.results import ResultWriter
+from ..core.split import DataSplit
+from ..core.trans import TokenClassifyModel, ModelContainer
+from ..ner.utils import *
 
 logger = logging.getLogger('ner.train')
 
@@ -68,20 +67,23 @@ def main(arg) -> int:
 
     train_data, eval_data, test_data = DataSplit.load(get_data_paths_prefixes(arg))
     logger.debug("Constructing train data set [%s]...", len(train_data))
-    train_set = TokenClassifyDataset(mc.labeler(), mc.tokenizer(), train_data,
-                                     arg.max_seq_len, label_field, text_field)
+    train_set = TokenClassifyDataset(
+        mc.labeler(), mc.tokenizer(), train_data, arg.max_seq_len, label_field, text_field
+    )
     logger.info("Constructed train data set [%s].", len(train_data))
     logger.debug("Constructing evaluation data set [%s]...", len(eval_data))
-    eval_set = TokenClassifyDataset(mc.labeler(), mc.tokenizer(), eval_data,
-                                    arg.max_seq_len, label_field, text_field)
+    eval_set = TokenClassifyDataset(
+        mc.labeler(), mc.tokenizer(), eval_data, arg.max_seq_len, label_field, text_field
+    )
     logger.info("Constructed evaluation data set [%s].", len(eval_data))
     # train the model
     mc.build(training_args, train_set, eval_set)
 
     # run tests
     logger.debug("Constructing test data set [%s]...", len(test_data))
-    test_set = TokenClassifyDataset(mc.labeler(), mc.tokenizer(), test_data,
-                                    arg.max_seq_len, label_field, text_field)
+    test_set = TokenClassifyDataset(
+        mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, label_field, text_field
+    )
     logger.info("Constructed test data set [%s].", len(test_data))
     results = mc.test(training_args, test_set)
 
@@ -89,16 +91,8 @@ def main(arg) -> int:
     logger.info("%s", results)
 
     # write results
-    combined_results = {}
-    if os.path.exists(os.path.join(arg.result_dir, 'results_all.json')):
-        with open(os.path.join(arg.result_dir, 'results_all.json')) as json_file:
-            combined_results = json.load(json_file)
-
-    combined_results[arg.model_name] = results
-    with open(os.path.join(arg.result_dir, 'results_all.json'), 'wt', encoding='utf-8') as fp:
-        json.dump(combined_results, fp, cls=NpEncoder)
-    with open(os.path.join(arg.result_dir, arg.model_name + ".json"), 'wt') as fp:
-        json.dump(results, fp, cls=NpEncoder)
+    rw: ResultWriter = ResultWriter(result_path)
+    rw.write(results, arg.model_name)
 
     ModelContainer.remove_checkpoint_dir(result_path)
     return 0

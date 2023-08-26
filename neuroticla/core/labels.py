@@ -71,10 +71,16 @@ class BinaryLabeler(Labeler):
                 self._labels = self._labels.remove(k)
         if len(self._labels) != 1:
             raise ValueError('BinaryLabeler should have single label!')
-        # self._label_to_id = {self._labels[0]: 1, 'not_' + self._labels[0]: 0}
-        # self._id_to_label = {1: self._labels[0], 0: 'not_' + self._labels[0]}
-        self._label_to_id = {1: 1, 0: 0}
-        self._id_to_label = {1: 1, 0: 0}
+        self._label_to_id = {labels[0] + '-1': 1, labels[0] + '-0': 0}
+        self._id_to_label = {1: labels[0] + '-1', 0: labels[0] + '-0'}
+
+    def for_binary_eval(self) -> List[str]:
+        result = []
+        for lx in self._source_labels:
+            result.append(lx + '-0')
+            result.append(lx + '-1')
+
+        return result
 
 
 class MultiLabeler(Labeler):
@@ -111,8 +117,8 @@ class MultiLabeler(Labeler):
     def for_binary_eval(self) -> List[str]:
         result = []
         for lx in self._source_labels:
-            result.append(lx + '0')
-            result.append(lx + '1')
+            result.append(lx + '-0')
+            result.append(lx + '-1')
 
         return result
 

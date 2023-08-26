@@ -1,10 +1,10 @@
 import logging
 import string
 
-from neuroticla.core.labels import Labeler
-from neuroticla.core.trans import TokenClassifyModel
-from neuroticla.ner.prep.tokens import get_tokenizer
-from neuroticla.ner.utils import *
+from ..core.labels import Labeler
+from ..core.trans import TokenClassifyModel
+from ..ner.prep.tokens import get_tokenizer
+from ..ner.utils import *
 
 logger = logging.getLogger('ner.infer')
 

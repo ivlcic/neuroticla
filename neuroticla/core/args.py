@@ -193,15 +193,9 @@ class CommonArguments:
         parser.add_argument(
             '-e', '--epochs', help='Number of epochs.', type=int, default=20
         )
-        parser.add_argument(
-            '--max_seq_len', help='Max sentence length in tokens / words.', type=int, default=256
-        )
 
     @classmethod
     def test(cls, parser: ArgumentParser):
         parser.add_argument(
             '-b', '--batch', help='Batch size.', type=int, default=32
-        )
-        parser.add_argument(
-            '--max_seq_len', help='Max sentence length in tokens / words.', type=int, default=256
         )
