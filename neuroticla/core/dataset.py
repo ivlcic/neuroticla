@@ -2,20 +2,20 @@ import torch
 import logging
 import pandas as pd
 
-from typing import List
+from typing import List, Union
 
 from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizer, BatchEncoding
 from tokenizers.tokenizers import Encoding
 
-from .labels import Labeler
+from .labels import Labeler, MultiLabeler
 
 logger = logging.getLogger('core.dataset')
 
 
 class ClassifyDataset(Dataset):
     def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, max_seq_len: int,
-                 label_field: str = 'label', text_field: str = 'text'):
+                 label_field: Union[str, List[str]] = 'label', text_field: Union[str, List[str]] = 'text'):
         self._labeler = labeler
         self._tokenizer = tokenizer
         self._max_seq_len = max_seq_len
@@ -41,11 +41,15 @@ class TokenClassifyDataset(ClassifyDataset):
                 label_ids.append(self._labeler.label2id(labels[word_idx]))
         return label_ids
 
-    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame,
-                 max_seq_len: int, label_field: str = 'label', text_field: str = 'text'):
+    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame, max_seq_len: int,
+                 label_field: Union[str, List[str]] = 'label', text_field: Union[str, List[str]] = 'text'):
         """Encodes the text data and labels
         """
         super().__init__(labeler, tokenizer, max_seq_len, label_field, text_field)
+        if not isinstance(label_field, str):
+            raise ValueError('Only single field for label is supported')
+        if not isinstance(text_field, str):
+            raise ValueError('Only single field for text is supported')
 
         ds_labels = [self._labeler.filter_replace(line).split() for line in data[label_field].values.tolist()]
 
@@ -90,8 +94,8 @@ class TokenClassifyDataset(ClassifyDataset):
 
 class SeqClassifyDataset(ClassifyDataset):
 
-    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame,
-                 max_seq_len: int, label_field: str = 'label', text_field: str = 'text'):
+    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame, max_seq_len: int,
+                 label_field: Union[str, List[str]] = 'label', text_field: Union[str, List[str]] = 'text'):
         """Encodes the text data and labels
                 """
         super().__init__(labeler, tokenizer, max_seq_len, label_field, text_field)
@@ -105,9 +109,21 @@ class SeqClassifyDataset(ClassifyDataset):
             return_tensors="pt"
         )
         # encode the labels
+        # single label field
         self.labels = []
-        for label in data[label_field].values.tolist():
-            self.labels.append(label)
+        if isinstance(label_field, str) or len(label_field) == 1:
+            lf_name = label_field
+            if not isinstance(label_field, str):
+                lf_name = label_field[0]
+            for label in data[lf_name].values.tolist():
+                self.labels.append(label)
+        elif isinstance(labeler, MultiLabeler):
+            for index, row in data.iterrows():
+                label_list = [l for l in label_field if row[l] == 1]
+                encoded = labeler.encode(label_list)
+                self.labels.append(encoded)
+        else:
+            ValueError('MultiLabeler should be used with more than one label field!')
 
     def __len__(self):
         return len(self.labels)

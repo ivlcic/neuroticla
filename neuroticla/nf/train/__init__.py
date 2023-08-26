@@ -1,6 +1,7 @@
 from neuroticla.nf.utils import *
 
 from .binrel import train as binrel_train
+from .lpset import train as lpset_train
 
 logger = logging.getLogger('nf.train')
 
@@ -30,5 +31,6 @@ def train_binrel(arg) -> int:
 
 
 def train_lpset(arg) -> int:
-    logger.info("Starting label powerset ...")
+    logger.info("Starting label power-set ...")
+    lpset_train(arg)
     return 0

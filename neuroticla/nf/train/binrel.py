@@ -1,3 +1,5 @@
+import os.path
+
 from transformers import TrainingArguments
 
 from ...core.dataset import SeqClassifyDataset
@@ -68,7 +70,7 @@ def train(arg) -> int:
         logger.info('%s', results)
 
         # write results
-        rw: ResultWriter = ResultWriter(result_path)
+        rw: ResultWriter = ResultWriter(arg.result_dir)
         rw.write(results, arg.model_name)
 
         ModelContainer.remove_checkpoint_dir(result_path)
