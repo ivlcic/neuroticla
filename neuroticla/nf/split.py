@@ -8,8 +8,8 @@ from ..core.split import DataSplit
 logger = logging.getLogger('nf.split')
 
 
-def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.split(nrcla_module, parser)
+def add_args(module_name: str, parser: ArgumentParser) -> None:
+    CommonArguments.split(module_name, parser)
     parser.add_argument(
         'corpora', help='Corpora files to split.', nargs='+',
         choices=['aussda', 'slomcor']

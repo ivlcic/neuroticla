@@ -8,7 +8,7 @@ from ..esdl.article import Article
 logger = logging.getLogger('nf.slomcor')
 
 
-def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
+def add_args(module_name: str, parser: ArgumentParser) -> None:
     pass
 
 

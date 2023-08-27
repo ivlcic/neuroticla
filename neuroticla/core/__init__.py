@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 import logging.config
 import os
-from typing import Type
+from typing import Type, TypeVar
 
 from .args import ModuleArguments, ArgumentParser
 
@@ -50,7 +50,7 @@ logger = logging.getLogger('core')
 
 class ModuleDescriptor:
 
-    project = 'neuroticla'
+    project = os.path.basename(os.path.dirname(os.path.dirname(__file__)))
 
     def __init__(self, name: str, descr: str, arg: ModuleArguments):
         self._name = name
@@ -70,10 +70,13 @@ class ModuleDescriptor:
         return self._args
 
 
+TExecModule = TypeVar('TExecModule', bound='ExecModule')
+
+
 class ExecModule:
 
     @classmethod
-    def get(cls, file_as_module_name: str) -> Type[ExecModule]:
+    def get(cls, file_as_module_name: str) -> TExecModule:
         package = os.path.splitext(os.path.basename(file_as_module_name))[0]
         logger.debug('Loading package: [%s]', package)
         py_module = importlib.import_module(ModuleDescriptor.project + '.' + package)
@@ -84,17 +87,18 @@ class ExecModule:
 
     def __init__(self, py_module):
         self._py_module = py_module
-        self._descr: ModuleDescriptor = py_module.NRCLA_MODULE
+        self._descriptor: ModuleDescriptor = py_module.MODULE_DESCRIPTOR
 
     def execute(self) -> int:
-        module_args: ModuleArguments = self._descr.get_args()
+        module_args: ModuleArguments = self._descriptor.get_args()
         parser: ArgumentParser = module_args.get_parser()
         arg = parser.parse_args()
-        pym_name = ModuleDescriptor.project + '.' + self._descr.get_name() + '.' + arg.action
+        pym_name = ModuleDescriptor.project + '.' + self._descriptor.get_name() + '.' + arg.action
         logger.debug('Loading Python module: [%s]', pym_name)
         py_module = importlib.import_module(pym_name)
 
         arg.func = None
+        arg.module_name = self._descriptor.get_name()
         if hasattr(arg, 'sub_action') and arg.sub_action is not None:
             fn = getattr(py_module, arg.action + '_' + arg.sub_action, None)
             if fn is not None:

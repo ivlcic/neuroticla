@@ -1,7 +1,7 @@
-from neuroticla.core import ModuleDescriptor
-from neuroticla.core.args import ModuleArguments, CommandArguments
+from ..core import ModuleDescriptor
+from ..core.args import ModuleArguments, CommandArguments
 
-NRCLA_MODULE = ModuleDescriptor(
+MODULE_DESCRIPTOR = ModuleDescriptor(
     'nf',
     'Newsframes detection neural network module',
     ModuleArguments([

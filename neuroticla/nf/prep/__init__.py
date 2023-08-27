@@ -30,9 +30,9 @@ def get_data_filter(input_path: str, target_dir_path: str, base_name: str, num_r
         return SlomcorDataFilter(input_path, target_dir_path, base_name, num_rows)
 
 
-def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.raw_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
-    CommonArguments.processed_data_dir(nrcla_module, parser, ('-o', '--data_out_dir'))
+def add_args(module_name: str, parser: ArgumentParser) -> None:
+    CommonArguments.raw_data_dir(module_name, parser, ('-i', '--data_in_dir'))
+    CommonArguments.processed_data_dir(module_name, parser, ('-o', '--data_out_dir'))
     parser.add_argument('--num_rows', type=int, help='Numer of rows to use', default=None)
     parser.add_argument(
         '-p', '--password', type=str, help="Zip file password", required=True

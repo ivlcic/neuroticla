@@ -8,14 +8,14 @@ from ..core.args import CommonArguments
 logger = logging.getLogger('nf.utils')
 
 
-def get_all_labels(ncra_module: str) -> List[str]:
-    labels_file = os.path.join(CommonArguments.data_path(ncra_module, 'processed'), 'tags.csv')
+def get_all_labels(module_name: str) -> List[str]:
+    labels_file = os.path.join(CommonArguments.data_path(module_name, 'processed'), 'tags.csv')
     labels = open(labels_file, 'r').read().split('\n')
     return labels
 
 
-def get_labels(nrcla_module: str, arg) -> List[str]:
-    labels = get_all_labels(nrcla_module)
+def get_labels(module_name: str, arg) -> List[str]:
+    labels = get_all_labels(module_name)
     if arg.subset is not None:
         subset = arg.subset.split(',')
         if all(item in labels for item in subset):
@@ -51,10 +51,10 @@ def compute_model_path(arg) -> str:
     return result_path
 
 
-def add_common_test_train_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.split_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
-    CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
-    CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
+def add_common_test_train_args(module_name: str, parser: ArgumentParser) -> None:
+    CommonArguments.split_data_dir(module_name, parser, ('-i', '--data_in_dir'))
+    CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
+    CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
     parser.add_argument(
         '--max_seq_len', help='Max sub-word tokens length.', type=int, default=512
     )

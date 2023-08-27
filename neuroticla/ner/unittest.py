@@ -6,7 +6,7 @@ from .prep.tokens import get_obeliks_tokenizer, get_reldi_tokenizer
 logger = logging.getLogger('ner.unittest')
 
 
-def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
+def add_args(module_name: str, parser: ArgumentParser) -> None:
     pass
 
 

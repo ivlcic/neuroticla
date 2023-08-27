@@ -10,10 +10,10 @@ def get_all_languages():
     return ['sl', 'hr', 'sr', 'bs', 'mk', 'sq', 'cs', 'bg', 'pl', 'ru', 'sk', 'uk']
 
 
-def add_common_test_train_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.split_data_dir(nrcla_module, parser, ('-i', '--data_in_dir'))
-    CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
-    CommonArguments.tmp_dir(nrcla_module, parser, ('-t', '--tmp_dir'))
+def add_common_test_train_args(module_name: str, parser: ArgumentParser) -> None:
+    CommonArguments.split_data_dir(module_name, parser, ('-i', '--data_in_dir'))
+    CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
+    CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
     parser.add_argument(
         '--max_seq_len', help='Max sentence length in sub-word tokens.', type=int, default=256
     )

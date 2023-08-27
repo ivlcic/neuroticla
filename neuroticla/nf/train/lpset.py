@@ -3,11 +3,12 @@ import os
 
 from transformers import TrainingArguments
 
-from neuroticla.core.dataset import SeqClassifyDataset
-from neuroticla.core.labels import MultiLabeler
-from neuroticla.core.split import DataSplit
-from neuroticla.core.trans import SeqClassifyModel, ModelContainer
-from neuroticla.nf.utils import compute_model_name, compute_model_path, get_data_path_prefix, get_labels
+from ...core.dataset import SeqClassifyDataset
+from ...core.labels import MultiLabeler
+from ...core.split import DataSplit
+from ...core.results import ResultWriter
+from ...core.trans import SeqClassifyModel, ModelContainer
+from ...nf.utils import compute_model_name, compute_model_path, get_data_path_prefix, get_labels
 
 logger = logging.getLogger('nf.train.lpset')
 
@@ -73,3 +74,9 @@ def train(arg) -> int:
 
     logger.info("Test set evaluation results:")
     logger.info("%s", results)
+    # write results
+    rw: ResultWriter = ResultWriter(arg.result_dir)
+    rw.write(results, arg.model_name)
+
+    ModelContainer.remove_checkpoint_dir(result_path)
+    return 0

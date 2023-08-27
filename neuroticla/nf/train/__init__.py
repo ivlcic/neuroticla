@@ -1,4 +1,4 @@
-from neuroticla.nf.utils import *
+from ...nf.utils import *
 
 from .binrel import train as binrel_train
 from .lpset import train as lpset_train
@@ -6,13 +6,13 @@ from .lpset import train as lpset_train
 logger = logging.getLogger('nf.train')
 
 
-def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
+def add_args(module_name: str, parser: ArgumentParser) -> None:
     CommonArguments.train(parser)
-    add_common_test_train_args(nrcla_module, parser)
+    add_common_test_train_args(module_name, parser)
     parser.add_argument(
         '-n', '--model_name', help='Target model name.', type=str, default=None
     )
-    labels = ','.join(get_all_labels(nrcla_module))
+    labels = ','.join(get_all_labels(module_name))
     parser.add_argument(
         '-u', '--subset', type=str, default=None,
         help='Subset of the labels to use for training (comma separated: ' + labels + ')',

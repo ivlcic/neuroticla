@@ -35,7 +35,7 @@ class ModuleArguments:
         self._actions = None
         self._parser = None
 
-    def init_parser(self, project: str, nrcla_module: str, description: str):
+    def init_parser(self, project: str, module_name: str, description: str):
         self._parser = argparse.ArgumentParser(
                 description=description
             )
@@ -45,7 +45,7 @@ class ModuleArguments:
         for x in self._commands:
             cmd_name = x.get_name()
             multi_action = x.is_multi_action()
-            pym_name = project + '.' + nrcla_module + '.' + cmd_name
+            pym_name = project + '.' + module_name + '.' + cmd_name
             logger.debug('Loading Python module: [%s]', pym_name)
             py_module = importlib.import_module(pym_name)
             logger.debug('Loaded Python module: [%s]', pym_name)
@@ -65,7 +65,7 @@ class ModuleArguments:
                     'sub_action',
                     help=cmd_name.capitalize() + ' functions to invoke', choices=sub_actions
                 )
-            py_module.add_args(nrcla_module, subparser)
+            py_module.add_args(module_name, subparser)
             logger.debug('Setting up arguments for [%s]', pym_name)
 
     def get_parser(self) -> ArgumentParser:

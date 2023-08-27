@@ -9,8 +9,8 @@ from ..ner.utils import *
 logger = logging.getLogger('ner.infer')
 
 
-def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.result_dir(nrcla_module, parser, ('-o', '--result_dir'))
+def add_args(module_name: str, parser: ArgumentParser) -> None:
+    CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
     parser.add_argument(
         'model_name', help='Model name or path.', type=str, default=None
     )

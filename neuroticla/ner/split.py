@@ -9,8 +9,8 @@ from ..ner.utils import get_all_languages
 logger = logging.getLogger('ner.split')
 
 
-def add_args(nrcla_module: str, parser: ArgumentParser) -> None:
-    CommonArguments.split(nrcla_module, parser, 'showeffort')
+def add_args(module_name: str, parser: ArgumentParser) -> None:
+    CommonArguments.split(module_name, parser, 'showeffort')
     parser.add_argument(
         'langs', help='Language files to split.', nargs='+',
         choices=get_all_languages()
