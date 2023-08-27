@@ -10,7 +10,7 @@ from typing import List, Any, Dict, Union
 from torch.nn.modules.module import T
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForTokenClassification, \
     PreTrainedModel, PreTrainedTokenizer, TrainingArguments, Trainer
-from sklearn.metrics import classification_report, accuracy_score, hamming_loss, multilabel_confusion_matrix, f1_score
+from sklearn import metrics
 
 from .labels import Labeler, MultiLabeler, BinaryLabeler
 from .dataset import ClassifyDataset
@@ -51,9 +51,9 @@ class ModelContainer(torch.nn.Module):
         super().__init__()
 
         self._labeler: Labeler = labeler
-        self._model: PreTrainedModel = None
+        self._model: Union[PreTrainedModel, None] = None
         self._metric = None
-        self._tokenizer: PreTrainedTokenizer = None
+        self._tokenizer: Union[PreTrainedTokenizer, None] = None
         self._tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, cache_dir=cache_model_dir
         )
@@ -203,35 +203,78 @@ class TokenClassifyModel(ModelContainer):
         return result
 
 
-class SklearnClassificationReport:
+class ClassificationMetrics:
 
-    def flatten_1hot(self, indicators: Union[List, np.array], binary: bool = True) -> List:
+    @classmethod
+    def flatten_1hot(cls, indicators: Union[List, np.array], binary: bool = True) -> List:
         result = []
         for indicator in indicators:
             for i, v in enumerate(indicator):
                 result.append((i * (2 if binary else 1)) + (0 if v == 0 else 1))
         return result
 
+    @classmethod
+    def score(cls, references: List[Any], predictions: List[Any], labels: List[str], average: str = 'binary'):
+        f1 = metrics.f1_score(references, predictions, zero_division=0, labels=labels, average=average)
+        precision = metrics.precision_score(references, predictions, zero_division=0, labels=labels, average=average)
+        recall = metrics.recall_score(references, predictions, zero_division=0, labels=labels, average=average)
+        result = {
+            'f1': f1,
+            'p': precision,
+            'r': recall,
+            's': len(references)
+        }
+        if average == 'binary':
+            result['a'] = metrics.accuracy_score(references, predictions)
+        return result
+
     def compute(self, predictions: List[Any], references: List[Any], labels: List[str], output_dict=True):
+        result: Dict[str, Any] = {
+            'avg': {
+                'micro': {},
+                'macro': {},
+                'weighted': {}
+            },
+            'accuracy': 0,
+            'hamming': 0,
+            'labels': {}
+        }
         hamming = False
         if len(predictions) > 0 and (isinstance(predictions[0], List) or isinstance(predictions[0], np.ndarray)):
             # we assume label indicator array / sparse matrix and two times more labels than sample dimensions
-            y_pred = self.flatten_1hot(predictions)
-            y_true = self.flatten_1hot(references)
+            y_pred = ClassificationMetrics.flatten_1hot(predictions)
+            y_true = ClassificationMetrics.flatten_1hot(references)
             hamming = True
         else:
             y_pred = predictions
             y_true = references
-        result = classification_report(
+
+        cr: Dict[str, Any] = metrics.classification_report(
             y_true, y_pred, digits=3, zero_division=0, output_dict=output_dict, target_names=labels
         )
-        if output_dict:
-            if hamming:
-                result['hamming_loss'] = hamming_loss(references, predictions)
-                result['cm'] = multilabel_confusion_matrix(references, predictions)
-                result['micro-F1'] = f1_score(references, predictions, average='micro')
-            if 'accuracy' not in result and output_dict:
-                result['accuracy'] = accuracy_score(references, predictions)
+        l_indices = []
+        for i, label in enumerate(labels):
+            result['labels'][label] = {
+                'f1': cr[label]['f1-score'], 'p': cr[label]['precision'],
+                'r': cr[label]['recall'], 's': cr[label]['support']
+            }
+            l_indices.append(i)
+
+        result['avg']['macro'] = {
+            'f1': cr['macro avg']['f1-score'], 'p': cr['macro avg']['precision'],
+            'r': cr['macro avg']['recall'], 's': cr['macro avg']['support']
+        }
+        result['avg']['weighted'] = {
+            'f1': cr['weighted avg']['f1-score'], 'p': cr['weighted avg']['precision'],
+            'r': cr['weighted avg']['recall'], 's': cr['weighted avg']['support']
+        }
+        result['avg']['micro'] = ClassificationMetrics.score(y_true, y_pred, l_indices, 'micro')
+        if 'accuracy' not in cr and output_dict:
+            result['accuracy'] = metrics.accuracy_score(y_true, y_pred)
+        else:
+            result['accuracy'] = cr['accuracy']
+        if hamming:
+            result['hamming'] = metrics.hamming_loss(references, predictions)
         return result
 
 
@@ -240,7 +283,7 @@ class SeqClassifyModel(ModelContainer):
     def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
         super(SeqClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir)
 
-        self._metric = SklearnClassificationReport()
+        self._metric = ClassificationMetrics()  # SklearnClassificationReport()
         self._model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path, cache_dir=cache_model_dir, num_labels=labeler.mun_labels(),
             id2label=labeler.ids2labels(), label2id=labeler.labels2ids()
@@ -275,9 +318,9 @@ class SeqClassifyModel(ModelContainer):
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
         return {
-            'precision': results['macro avg']['precision'],
-            'recall': results['macro avg']['recall'],
-            'f1': results['macro avg']['f1-score'],
+            'precision': results['avg']['macro']['p'],
+            'recall': results['avg']['macro']['r'],
+            'f1': results['avg']['macro']['f1'],
             'accuracy': results['accuracy']
         }
 
