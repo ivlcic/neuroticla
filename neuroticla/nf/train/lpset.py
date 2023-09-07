@@ -21,7 +21,7 @@ def train(arg) -> int:
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
-    arg.model_name = compute_model_name(arg, labels)
+    compute_model_name(arg, labels)
     result_path = compute_model_path(arg)
 
     training_args = TrainingArguments(
@@ -41,11 +41,12 @@ def train(arg) -> int:
         logging_strategy='epoch',
     )
 
-    logger.info('Training for labels: %s', labels)
+    logger.info('Training for labels: %s with device [%s]', labels, arg.device)
     mc = SeqClassifyModel(
         ModelContainer.model_name_map[arg.pretrained_model],
-        MultiLabeler(labels=labels),
-        os.path.join(arg.tmp_dir, arg.pretrained_model)
+        labeler=MultiLabeler(labels=labels),
+        cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
+        device=arg.device
     )
 
     text_field = 'body'

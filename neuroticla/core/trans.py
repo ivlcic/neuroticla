@@ -47,7 +47,8 @@ class ModelContainer(torch.nn.Module):
                 shutil.rmtree(checkpoint_path)
                 logger.info('Removed checkpoint dir [%s].', checkpoint_path)
 
-    def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
+    def __init__(self, model_name_or_path: str, labeler: Labeler,
+                 cache_model_dir: Union[str, None] = None, device: str = None):
         super().__init__()
 
         self._labeler: Labeler = labeler
@@ -57,8 +58,10 @@ class ModelContainer(torch.nn.Module):
         self._tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, cache_dir=cache_model_dir
         )
-        use_cuda = torch.cuda.is_available()
-        device = torch.device('cuda' if use_cuda else 'cpu')
+        if device is None:
+            use_cuda = torch.cuda.is_available()
+            device = torch.device('cuda' if use_cuda else 'cpu')
+            logger.info('Device was not set will use [%s].', device)
         self._device = device
 
     def model(self):
@@ -121,8 +124,9 @@ class ModelContainer(torch.nn.Module):
 
 class TokenClassifyModel(ModelContainer):
 
-    def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
-        super(TokenClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir)
+    def __init__(self, model_name_or_path: str, labeler: Labeler,
+                 cache_model_dir: Union[str, None] = None, device: str = None):
+        super(TokenClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir, device)
 
         self._metric = evaluate.load('seqeval')
         self._model = AutoModelForTokenClassification.from_pretrained(
@@ -280,8 +284,9 @@ class ClassificationMetrics:
 
 class SeqClassifyModel(ModelContainer):
 
-    def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None):
-        super(SeqClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir)
+    def __init__(self, model_name_or_path: str, labeler: Labeler,
+                 cache_model_dir: Union[str, None] = None, device: str = None):
+        super(SeqClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir, device)
 
         self._metric = ClassificationMetrics()  # SklearnClassificationReport()
         self._model = AutoModelForSequenceClassification.from_pretrained(

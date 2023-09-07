@@ -3,6 +3,7 @@ import importlib
 import logging
 import os
 import textwrap
+import torch
 
 from argparse import ArgumentParser
 from typing import List, Tuple
@@ -80,7 +81,7 @@ class CommonArguments:
             '-s', '--data_split',
             help=textwrap.dedent('''\
             Data split in %% separated with a colon (default: %(default)s):
-            For example "80:10" would produce 80%% train, 10%% evaluation and 10%% test data set size.
+            For example '80:10' would produce 80%% train, 10%% evaluation and 10%% test data set size.
             '''),
             type=str,
             default='80:10'
@@ -167,15 +168,15 @@ class CommonArguments:
         CommonArguments.data_split(parser)
         parser.add_argument(
             '-u', '--subsets', type=str, default=None,
-            help="Subsets of the files to use for each corpora (file name contains any of the comma separated strings)",
+            help='Subsets of the files to use for each corpora (file name contains any of the comma separated strings)',
         )
         if default_password:
             parser.add_argument(
-                '-p', '--password', type=str, default=default_password, help="Zip file password"
+                '-p', '--password', type=str, default=default_password, help='Zip file password'
             )
         else:
             parser.add_argument(
-                '-p', '--password', type=str, required=True, help="Zip file password"
+                '-p', '--password', type=str, required=True, help='Zip file password'
             )
         parser.add_argument(
             '-r', '--non_reproducible_shuffle', action='store_true', default=False,
@@ -183,7 +184,16 @@ class CommonArguments:
         )
 
     @classmethod
+    def device(cls, parser: ArgumentParser):
+        have_cuda = torch.cuda.is_available()
+        device = 'cuda' if have_cuda else 'cpu'
+        parser.add_argument(
+            '-d', '--device', type=str, help='Torch device to use.', default=device
+        )
+
+    @classmethod
     def train(cls, parser: ArgumentParser):
+        cls.device(parser)
         parser.add_argument(
             '-b', '--batch', help='Batch size.', type=int, default=32
         )
@@ -196,6 +206,7 @@ class CommonArguments:
 
     @classmethod
     def test(cls, parser: ArgumentParser):
+        cls.device(parser)
         parser.add_argument(
             '-b', '--batch', help='Batch size.', type=int, default=32
         )

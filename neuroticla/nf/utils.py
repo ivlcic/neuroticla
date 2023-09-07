@@ -31,13 +31,18 @@ def get_data_path_prefix(arg) -> List[str]:
     return data_paths
 
 
-def compute_model_name(arg, labels: List[str] = None) -> str:
-    if arg.model_name is not None:
-        return arg.model_name
+def compute_model_name(arg, labels: List[str] = None, force_label: bool = False) -> str:
     l_str = ''
     if labels is not None:
         l_str = '-' + '_'.join(labels)
-    m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}-{arg.corpora}{l_str}'
+    if arg.model_name is not None:
+        if force_label:
+            m = f'{arg.model_name}{l_str}'
+        else:
+            m = arg.model_name
+    else:
+        m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}-{arg.corpora}{l_str}'
+    arg.model_name = m
     return m
 
 

@@ -28,10 +28,11 @@ def main(arg) -> int:
 
     mc: TokenClassifyModel = TokenClassifyModel(
         result_path,
-        Labeler(
+        labeler=Labeler(
             os.path.join(CommonArguments.data_path('ner', 'processed'), 'tags.csv'),
             replace_labels=replace_ner_tags(arg)
-        )
+        ),
+        device=arg.device
     )
     mc.eval()
 

@@ -17,10 +17,14 @@ def train(arg) -> int:
     if not labels:
         return 1
 
+    compute_m_name = arg.model_name is None
+
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
     for label in labels:
-        arg.model_name = compute_model_name(arg, [label])
+        compute_model_name(arg, [label], True)
         result_path = compute_model_path(arg)
+        logger.info('Started training model [%s] for label [%s] to path [%s].',
+                    arg.model_name, label, result_path)
 
         training_args = TrainingArguments(
             output_dir=result_path,
@@ -39,11 +43,12 @@ def train(arg) -> int:
             logging_strategy='epoch',
         )
 
-        logger.info('Training for label: %s', label)
+        logger.info('Training for label: %s with device [%s]', label, arg.device)
         mc = SeqClassifyModel(
             ModelContainer.model_name_map[arg.pretrained_model],
-            BinaryLabeler(labels=[label]),
-            os.path.join(arg.tmp_dir, arg.pretrained_model)
+            labeler=BinaryLabeler(labels=[label]),
+            cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
+            device=arg.device
         )
         logger.debug('Constructing train data set [%s]...', len(train_data))
         train_set = SeqClassifyDataset(
@@ -72,6 +77,11 @@ def train(arg) -> int:
         # write results
         rw: ResultWriter = ResultWriter(arg.result_dir)
         rw.write(results, arg.model_name)
-
+        logger.info('Writing [%s] to [%s].', arg.model_name, result_path)
         ModelContainer.remove_checkpoint_dir(result_path)
+
+        # reset model name back to None to be recomputed
+        if compute_m_name:
+            arg.model_name = None
+
     return 0

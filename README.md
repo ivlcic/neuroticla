@@ -268,8 +268,8 @@ Which is based on
 
 ### Train
 ```
-./nf train binrel --tqdm -e 40 -b 12 -u eco mcbert aussda_manual
-./nf train binrel --tqdm -e 40 -b 12 -u eco xlmrb aussda_manual
-./nf train lpset --tqdm -e 40 -b 12 -u eco,lab,wel,sec mcbert aussda_manual
-./nf train lpset --tqdm -e 40 -b 12 -u eco,lab,wel,sec xlmrb aussda_manual
+./nf train binrel --tqdm -e 20 -b 12 -u eco mcbert aussda_manual
+./nf train binrel --tqdm -e 20 -b 12 -u eco xlmrb aussda_manual
+./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec mcbert aussda_manual
+./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec xlmrb aussda_manual
 ```

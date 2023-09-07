@@ -11,6 +11,7 @@ logger = logging.getLogger('ner.infer')
 
 def add_args(module_name: str, parser: ArgumentParser) -> None:
     CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
+    CommonArguments.device(parser)
     parser.add_argument(
         'model_name', help='Model name or path.', type=str, default=None
     )
@@ -31,7 +32,8 @@ def main(arg) -> int:
         Labeler(
             os.path.join(CommonArguments.data_path('ner', 'processed'), 'tags.csv'),
             replace_labels=replace_ner_tags(arg)
-        )
+        ),
+        device=arg.device
     )
     mc.eval()
 

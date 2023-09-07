@@ -38,11 +38,12 @@ def main(arg) -> int:
 
     mc = TokenClassifyModel(
         ModelContainer.model_name_map[arg.pretrained_model],
-        Labeler(
+        labeler=Labeler(
             os.path.join(CommonArguments.data_path('ner', 'processed'), 'tags.csv'),
             replace_labels=replace_ner_tags(arg)
         ),
-        os.path.join(arg.tmp_dir, arg.pretrained_model)
+        cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
+        device=arg.device
     )
 
     training_args = TrainingArguments(
