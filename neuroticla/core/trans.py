@@ -249,13 +249,11 @@ class ClassificationMetrics:
             'hamming': 0,
             'labels': {}
         }
-        hamming = False
         bin_labels = ClassificationMetrics.for_binary_eval(labels)
         if len(predictions) > 0 and (isinstance(predictions[0], List) or isinstance(predictions[0], np.ndarray)):
             # we assume label indicator array / sparse matrix and two times more labels than sample dimensions
             y_pred = ClassificationMetrics.flatten_1hot(predictions)
             y_true = ClassificationMetrics.flatten_1hot(references)
-            hamming = True
         else:
             y_pred = predictions
             y_true = references
@@ -284,8 +282,7 @@ class ClassificationMetrics:
             result['accuracy'] = metrics.accuracy_score(y_true, y_pred)
         else:
             result['accuracy'] = cr['accuracy']
-        if hamming:
-            result['hamming'] = metrics.hamming_loss(references, predictions)
+        result['hamming'] = metrics.hamming_loss(references, predictions)
 
         return result
 
@@ -323,15 +320,17 @@ class SeqClassifyModel(ModelContainer):
             labels = self._labeler.source_labels()
 
         results = self._metric.compute(references=y_true, predictions=y_pred, labels=labels)
+        if callback is not None:
+            callback(self._labeler, y_true, y_pred)
         if test:
             if isinstance(self._labeler, MultiLabeler):
                 pass
             return results
+
         logger.info('Batch eval: %s', results)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
-        if callback is not None:
-            callback(self._labeler, y_true, y_pred)
+
         return {
             'precision': results['avg']['macro']['p'],
             'recall': results['avg']['macro']['r'],

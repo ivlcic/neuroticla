@@ -55,9 +55,8 @@ def test_binrel(arg) -> int:
 
         logger.info('Training for label: %s with device [%s]', label, arg.device)
         mc = SeqClassifyModel(
-            ModelContainer.model_name_map[arg.pretrained_model],
+            result_path,
             labeler=BinaryLabeler(labels=[label]),
-            cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
             device=arg.device
         )
 
@@ -87,9 +86,8 @@ def test_lpset(arg) -> int:
 
     logger.info('Testing labels: %s with device [%s]', labels, arg.device)
     mc = SeqClassifyModel(
-        ModelContainer.model_name_map[arg.pretrained_model],
+        result_path,
         labeler=MultiLabeler(labels=labels),
-        cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
         device=arg.device
     )
 
