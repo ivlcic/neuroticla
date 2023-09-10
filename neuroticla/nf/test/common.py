@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 
-from typing import Union, List
+from typing import Union, List, Callable
 
 from transformers import TrainingArguments
 
@@ -13,15 +13,17 @@ from ...core.trans import SeqClassifyModel
 logger = logging.getLogger('nf.test')
 
 
-def run_test(arg, mc: SeqClassifyModel, test_args: TrainingArguments,
-             test_data: pd.DataFrame, label: Union[str, List[str]] = 'label'):
+def run_test(arg, mc: SeqClassifyModel, test_args: TrainingArguments, test_data: pd.DataFrame,
+             label: Union[str, List[str]] = 'label',
+             text_field: Union[str, List[str]] = 'body',
+             callback: Callable = None):
     # run tests
     logger.debug('Constructing test data set [%s]...', len(test_data))
     test_set = SeqClassifyDataset(
-        mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, label, 'body'
+        mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, label, text_field
     )
     logger.info('Constructed test data set [%s].', len(test_data))
-    results = mc.test(test_args, test_set)
+    results = mc.test(test_args, test_set, callback)
 
     logger.info('Test set evaluation results:')
     logger.info('%s', results)

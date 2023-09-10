@@ -1,12 +1,25 @@
 from transformers import TrainingArguments
 
 from .common import run_test, write_test_results
-from ...core.labels import BinaryLabeler, MultiLabeler
+from ...core.labels import BinaryLabeler, MultiLabeler, Labeler
 from ...core.split import DataSplit
-from ...core.trans import SeqClassifyModel, ModelContainer
+from ...core.trans import SeqClassifyModel
 from ...nf.utils import *
 
 logger = logging.getLogger('nf.test')
+
+
+class ResultsCollector:
+
+    def __init__(self):
+        self.labeler = None
+        self.y_pred = None
+        self.y_true = None
+
+    def collect(self, labeler: Labeler, y_true, y_pred):
+        self.y_true = y_true
+        self.y_pred = y_pred
+        self.labeler = labeler
 
 
 def add_args(module_name: str, parser: ArgumentParser) -> None:
@@ -39,11 +52,11 @@ def _get_training_args(arg, result_path: str) -> TrainingArguments:
 
 
 def test_binrel(arg) -> int:
-    logger = logging.getLogger('nf.test.binrel')
     labels = get_labels('nf', arg)
     if not labels:
         return 1
 
+    text_field = 'body'
     compute_m_name = arg.model_name is None
 
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
@@ -59,23 +72,30 @@ def test_binrel(arg) -> int:
             labeler=BinaryLabeler(labels=[label]),
             device=arg.device
         )
-
-        results = run_test(arg, mc, _get_training_args(arg, result_path), test_data, label)
+        collector = ResultsCollector()
+        results = run_test(
+            arg, mc, _get_training_args(arg, result_path), test_data, label, text_field, collector.collect
+        )
         write_test_results(arg, results, [label])
+        test_data['p_' + label] = collector.y_pred
 
         # reset model name back to None to be recomputed
         if compute_m_name:
             arg.model_name = None
 
+    arg.model_name = compute_model_name(arg, None, True)  # model name w/o label
+    test_data.drop(['body', 'lead'], axis=1, inplace=True)
+    test_pred_path = os.path.join(compute_model_path(arg, 'binrel'), 'predicted.cvs')
+    test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
     return 0
 
 
 def test_lpset(arg) -> int:
-    logger = logging.getLogger('nf.test.lpset')
     labels = get_labels('nf', arg)
     if not labels:
         return 1
 
+    text_field = 'body'
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
@@ -91,6 +111,9 @@ def test_lpset(arg) -> int:
         device=arg.device
     )
 
-    results = run_test(arg, mc, _get_training_args(arg, result_path), test_data, labels)
+    collector = ResultsCollector()
+    results = run_test(
+        arg, mc, _get_training_args(arg, result_path), test_data, labels, text_field, collector.collect
+    )
     write_test_results(arg, results, labels)
     return 0
