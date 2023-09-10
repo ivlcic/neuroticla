@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import evaluate
 
-from typing import List, Any, Dict, Union
+from typing import List, Any, Dict, Union, Callable
 
 from torch.nn.modules.module import T
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForTokenClassification, \
@@ -85,7 +85,7 @@ class ModelContainer(torch.nn.Module):
     def device(self):
         return self._device
 
-    def compute_metrics(self, p, test: bool = False):
+    def compute_metrics(self, p, test: bool = False, callback: Callable = None):
         pass
 
     def forward(self, input_id, mask, label):
@@ -110,7 +110,7 @@ class ModelContainer(torch.nn.Module):
         trainer.evaluate()
         logger.info('Evaluation done.')
 
-    def test(self, training_args: TrainingArguments, test_set: ClassifyDataset):
+    def test(self, training_args: TrainingArguments, test_set: ClassifyDataset, callback: Callable = None):
         self._model.eval()
         trainer = Trainer(
             model=self._model,
@@ -119,7 +119,7 @@ class ModelContainer(torch.nn.Module):
             compute_metrics=self.compute_metrics
         )
         predictions, labels, _ = trainer.predict(test_set)
-        return self.compute_metrics((predictions, labels), True)
+        return self.compute_metrics((predictions, labels), True, callback)
 
 
 class TokenClassifyModel(ModelContainer):
@@ -135,7 +135,7 @@ class TokenClassifyModel(ModelContainer):
         )
         self._model.to(self._device)
 
-    def compute_metrics(self, p, test: bool = False):
+    def compute_metrics(self, p, test: bool = False, callback: Callable = None):
         logits, labels_list = p
 
         # select predicted index with maximum logit for each token
@@ -154,13 +154,15 @@ class TokenClassifyModel(ModelContainer):
             tagged_labels_list.append(tagged_labels)
 
         results = self._metric.compute(
-            predictions=tagged_predictions_list, references=tagged_labels_list, scheme='IOB2', mode='strict'
+             references=tagged_labels_list, predictions=tagged_predictions_list, scheme='IOB2', mode='strict'
         )
         if test:
             return results
         logger.info('Batch eval: %s', results)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
+        if callback is not None:
+            callback(self._labeler, tagged_labels_list, tagged_predictions_list)
         return {
             'precision': results['overall_precision'],
             'recall': results['overall_recall'],
@@ -232,7 +234,11 @@ class ClassificationMetrics:
             result['a'] = metrics.accuracy_score(references, predictions)
         return result
 
-    def compute(self, predictions: List[Any], references: List[Any], labels: List[str], output_dict=True):
+    @classmethod
+    def for_binary_eval(cls, labels: List[str]) -> List[str]:
+        return [lx + suffix for lx in labels for suffix in ['-0', '-1']]
+
+    def compute(self, references: List[Any], predictions: List[Any], labels: List[str], output_dict: bool = True):
         result: Dict[str, Any] = {
             'avg': {
                 'micro': {},
@@ -244,6 +250,7 @@ class ClassificationMetrics:
             'labels': {}
         }
         hamming = False
+        bin_labels = ClassificationMetrics.for_binary_eval(labels)
         if len(predictions) > 0 and (isinstance(predictions[0], List) or isinstance(predictions[0], np.ndarray)):
             # we assume label indicator array / sparse matrix and two times more labels than sample dimensions
             y_pred = ClassificationMetrics.flatten_1hot(predictions)
@@ -254,10 +261,10 @@ class ClassificationMetrics:
             y_true = references
 
         cr: Dict[str, Any] = metrics.classification_report(
-            y_true, y_pred, digits=3, zero_division=0, output_dict=output_dict, target_names=labels
+            y_true, y_pred, digits=3, zero_division=0, output_dict=output_dict, target_names=bin_labels
         )
         l_indices = []
-        for i, label in enumerate(labels):
+        for i, label in enumerate(bin_labels):
             result['labels'][label] = {
                 'f1': cr[label]['f1-score'], 'p': cr[label]['precision'],
                 'r': cr[label]['recall'], 's': cr[label]['support']
@@ -279,6 +286,7 @@ class ClassificationMetrics:
             result['accuracy'] = cr['accuracy']
         if hamming:
             result['hamming'] = metrics.hamming_loss(references, predictions)
+
         return result
 
 
@@ -295,14 +303,14 @@ class SeqClassifyModel(ModelContainer):
         )
         self._model.to(self._device)
 
-    def compute_metrics(self, p, test: bool = False):
+    def compute_metrics(self, p, test: bool = False, callback: Callable = None):
         logits, y_true = p
 
         # select predicted index with maximum logit for each token
         y_pred = np.argmax(logits, axis=1)
 
         labels = self._labeler.source_labels()
-        if isinstance(self._labeler, MultiLabeler):
+        if isinstance(self._labeler, MultiLabeler):  # here we have integer encoded every label combination
             decoded_predictions = []
             decoded_labels = []
             for p_sample, t_sample in zip(y_pred, y_true):
@@ -310,11 +318,11 @@ class SeqClassifyModel(ModelContainer):
                 decoded_labels.append(self._labeler.binpowset(t_sample))
             y_pred = decoded_predictions
             y_true = decoded_labels
-            labels = self._labeler.for_binary_eval()
+            labels = self._labeler.source_labels()
         if isinstance(self._labeler, BinaryLabeler):
-            labels = self._labeler.for_binary_eval()
+            labels = self._labeler.source_labels()
 
-        results = self._metric.compute(predictions=y_pred, references=y_true, labels=labels)
+        results = self._metric.compute(references=y_true, predictions=y_pred, labels=labels)
         if test:
             if isinstance(self._labeler, MultiLabeler):
                 pass
@@ -322,6 +330,8 @@ class SeqClassifyModel(ModelContainer):
         logger.info('Batch eval: %s', results)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
+        if callback is not None:
+            callback(self._labeler, y_true, y_pred)
         return {
             'precision': results['avg']['macro']['p'],
             'recall': results['avg']['macro']['r'],

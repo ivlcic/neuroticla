@@ -42,13 +42,12 @@ def compute_model_name(arg, labels: List[str] = None, force_label: bool = False)
             m = arg.model_name
     else:
         m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}-{arg.corpora}{l_str}'
-    arg.model_name = m
     return m
 
 
-def compute_model_path(arg) -> str:
+def compute_model_path(arg, subdir: str) -> str:
     if not os.path.exists(arg.model_name):
-        result_path = os.path.join(arg.result_dir, arg.model_name)
+        result_path = os.path.join(arg.result_dir, subdir, arg.model_name)
         if not os.path.exists(result_path):
             os.makedirs(result_path)
     else:

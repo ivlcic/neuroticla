@@ -32,6 +32,6 @@ class ResultWriter:
 
         combined_results[model_name] = results
         with open(total_path, 'wt', encoding='utf-8') as fp:
-            json.dump(combined_results, fp, cls=NpEncoder)
+            json.dump(combined_results, fp, cls=NpEncoder, indent=2)
         with open(os.path.join(self._result_dir, model_name + ".json"), 'wt') as fp:
-            json.dump(results, fp, cls=NpEncoder)
+            json.dump(results, fp, cls=NpEncoder, indent=2)

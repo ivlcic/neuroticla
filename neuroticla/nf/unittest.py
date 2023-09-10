@@ -1,4 +1,5 @@
 import logging
+import json
 import numpy as np
 
 from unittest import TestCase
@@ -6,6 +7,7 @@ from argparse import ArgumentParser
 from sklearn import metrics
 
 from ..core.labels import MultiLabeler
+from ..core.trans import ClassificationMetrics
 
 logger = logging.getLogger('nf.test')
 
@@ -105,17 +107,24 @@ def unittest_encode(arg):
 
 
 def unittest_metrics(arg):
-    y_pred = [0, 1, 0, 0]
     y_true = [0, 1, 0, 1]
-    f1_score = metrics.f1_score(y_true, y_pred, labels=['eco'])
-    precision = metrics.precision_score(y_true, y_pred, labels=['eco'])
-    recall = metrics.recall_score(y_true, y_pred, labels=['eco'])
-    print(f'P:[{precision}], R:[{recall}], F1:{f1_score}')
+    y_pred = [0, 1, 0, 0]
+    labels = ['eco']
+    f1_score = metrics.f1_score(y_true, y_pred, labels=labels)
+    precision = metrics.precision_score(y_true, y_pred, labels=labels)
+    recall = metrics.recall_score(y_true, y_pred, labels=labels)
+
     print(metrics.classification_report(y_true, y_pred))
-    f1_score = metrics.f1_score(y_true, y_pred, labels=[0, 1], average='macro')
-    precision = metrics.precision_score(y_true, y_pred, labels=['eco-0', 'eco-1'], average='macro')
-    recall = metrics.recall_score(y_true, y_pred, labels=['eco-0', 'eco-1'], average='macro')
     print(f'P:[{precision}], R:[{recall}], F1:{f1_score}')
+    print('==============================================================================================')
+
+    ny_pred = np.array([y_pred]).transpose().tolist()  # convert to single column matrix - vector
+    ny_true = np.array([y_true]).transpose().tolist()
+    m = ClassificationMetrics()
+    report = m.compute(ny_true, ny_pred, labels=labels)
+    report_str = json.dumps(report, indent=2)
+    print(f'Result: {report_str}')
+    print('==============================================================================================')
 
     y_pred = [0, 0, 0, 0, 0]
     y_true = [0, 0, 0, 1, 0]
