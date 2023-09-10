@@ -99,7 +99,7 @@ def test_lpset(arg) -> int:
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
-    compute_model_name(arg, labels)
+    arg.model_name = compute_model_name(arg, labels)
     result_path = compute_model_path(arg, 'lpset')
     logger.info('Started testing model [%s] for label [%s] from path [%s].',
                 arg.model_name, labels, result_path)
@@ -116,4 +116,11 @@ def test_lpset(arg) -> int:
         arg, mc, _get_training_args(arg, result_path), test_data, labels, text_field, collector.collect
     )
     write_test_results(arg, results, labels)
+
+    for lx, lbl in enumerate(labels):
+        test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
+
+    test_data.drop(['body', 'lead'], axis=1, inplace=True)
+    test_pred_path = os.path.join(compute_model_path(arg, 'lpset'), 'predicted.cvs')
+    test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
     return 0

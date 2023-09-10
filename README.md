@@ -273,3 +273,9 @@ Which is based on
 ./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec mcbert aussda_manual
 ./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec xlmrb aussda_manual
 ```
+
+# Test
+```
+./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec mcbert aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec mcbert aussda_manual
+```

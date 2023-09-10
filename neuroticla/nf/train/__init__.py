@@ -106,7 +106,7 @@ def train_lpset(arg) -> int:
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
-    compute_model_name(arg, labels)
+    arg.model_name = compute_model_name(arg, labels)
     result_path = compute_model_path(arg, 'lpset')
 
     logger.info('Training for labels: %s with device [%s]', labels, arg.device)
