@@ -51,14 +51,14 @@ def compute_model_name(arg, text_fields: List[str], labels: List[str] = None, fo
         l_str = '.l-' + '_'.join(labels)
     f_str = ''
     if text_fields is not None:
-        f_str = '.f-' + ''.join([text_field[0] for text_field in text_fields if text_field])
+        f_str = '.f-' + '_'.join([text_field[0] for text_field in text_fields if text_field])
     if arg.model_name is not None:
         if force_label:
             m = f'{arg.model_name}{f_str}{l_str}'
         else:
             m = arg.model_name
     else:
-        m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}-{arg.corpora}{f_str}{l_str}'
+        m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}.{arg.corpora}{f_str}{l_str}'
     return m
 
 
