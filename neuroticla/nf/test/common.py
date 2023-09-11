@@ -28,11 +28,3 @@ def run_test(arg, mc: SeqClassifyModel, test_args: TrainingArguments, test_data:
     logger.info('Test set evaluation results:')
     logger.info('%s', results)
     return results
-
-
-def write_test_results(arg, results, label: List[str]):
-    # write results
-    result_name = compute_model_name(arg, label, True)
-    rw: ResultWriter = ResultWriter(arg.result_dir)
-    rw.write(results, result_name)
-    logger.info('Written test results [%s] to [%s].', arg.model_name, arg.result_dir)

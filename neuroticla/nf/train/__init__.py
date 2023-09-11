@@ -1,8 +1,11 @@
+import os.path
+
 from transformers import TrainingArguments
 
-from ..test import run_test, write_test_results
+from ..test import run_test
 from ...core.dataset import SeqClassifyDataset
 from ...core.labels import BinaryLabeler, MultiLabeler
+from ...core.results import ResultWriter
 from ...core.split import DataSplit
 from ...core.trans import SeqClassifyModel, ModelContainer
 from ...nf.utils import *
@@ -53,12 +56,12 @@ def train_binrel(arg) -> int:
     if not labels:
         return 1
 
-    text_field = 'body'
+    text_fields = ['body']
     compute_m_name = arg.model_name is None
 
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
     for label in labels:
-        arg.model_name = compute_model_name(arg, None, True)  # model name w/o label
+        arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
         result_path = os.path.join(compute_model_path(arg, 'binrel'), label)
         logger.info('Started training model [%s] for label [%s] to path [%s].',
                     arg.model_name, label, result_path)
@@ -72,12 +75,12 @@ def train_binrel(arg) -> int:
         )
         logger.debug('Constructing train data set [%s]...', len(train_data))
         train_set = SeqClassifyDataset(
-            mc.labeler(), mc.tokenizer(), train_data, arg.max_seq_len, label, text_field
+            mc.labeler(), mc.tokenizer(), train_data, arg.max_seq_len, label, text_fields
         )
         logger.info('Constructed train data set [%s].', len(train_data))
         logger.debug('Constructing evaluation data set [%s]...', len(eval_data))
         eval_set = SeqClassifyDataset(
-            mc.labeler(), mc.tokenizer(), eval_data, arg.max_seq_len, label, text_field
+            mc.labeler(), mc.tokenizer(), eval_data, arg.max_seq_len, label, text_fields
         )
         logger.info('Constructed evaluation data set [%s].', len(eval_data))
 
@@ -86,7 +89,8 @@ def train_binrel(arg) -> int:
         mc.build(training_args, train_set, eval_set)
 
         results = run_test(arg, mc, training_args, test_data, label)
-        write_test_results(arg, results, [label])
+        result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
+        result_writer.write(results, 'binrel-' + arg.model_name + '-' + label, label)
         logger.info('Writing [%s] to [%s].', arg.model_name, result_path)
         ModelContainer.remove_checkpoint_dir(result_path)
 
@@ -103,10 +107,12 @@ def train_lpset(arg) -> int:
     if not labels:
         return 1
 
+    text_fields = ['body']
+
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
-    arg.model_name = compute_model_name(arg, labels)
+    arg.model_name = compute_model_name(arg, text_fields, labels)
     result_path = compute_model_path(arg, 'lpset')
 
     logger.info('Training for labels: %s with device [%s]', labels, arg.device)
@@ -117,16 +123,14 @@ def train_lpset(arg) -> int:
         device=arg.device
     )
 
-    text_field = 'body'
-
     logger.debug("Constructing train data set [%s]...", len(train_data))
     train_set = SeqClassifyDataset(
-        mc.labeler(), mc.tokenizer(), train_data, arg.max_seq_len, labels, text_field
+        mc.labeler(), mc.tokenizer(), train_data, arg.max_seq_len, labels, text_fields
     )
     logger.info("Constructed train data set [%s].", len(train_data))
     logger.debug("Constructing evaluation data set [%s]...", len(eval_data))
     eval_set = SeqClassifyDataset(
-        mc.labeler(), mc.tokenizer(), eval_data, arg.max_seq_len, labels, text_field
+        mc.labeler(), mc.tokenizer(), eval_data, arg.max_seq_len, labels, text_fields
     )
     logger.info("Constructed evaluation data set [%s].", len(eval_data))
 
@@ -135,7 +139,8 @@ def train_lpset(arg) -> int:
     mc.build(training_args, train_set, eval_set)
 
     results = run_test(arg, mc, training_args, test_data, labels)
-    write_test_results(arg, results, labels)
+    result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
+    result_writer.write(results, 'lpset-' + arg.model_name)
 
     ModelContainer.remove_checkpoint_dir(result_path)
     return 0

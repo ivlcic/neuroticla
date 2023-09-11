@@ -1,7 +1,8 @@
 from transformers import TrainingArguments
 
-from .common import run_test, write_test_results
+from .common import run_test
 from ...core.labels import BinaryLabeler, MultiLabeler, Labeler
+from ...core.results import ResultWriter
 from ...core.split import DataSplit
 from ...core.trans import SeqClassifyModel
 from ...nf.utils import *
@@ -56,12 +57,13 @@ def test_binrel(arg) -> int:
     if not labels:
         return 1
 
-    text_field = 'body'
+    text_fields = ['body']
     compute_m_name = arg.model_name is None
 
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
     for label in labels:
-        arg.model_name = compute_model_name(arg, None, True)  # model name w/o label
+        # model name w/o label
+        arg.model_name = compute_model_name(arg, text_fields, None, True)
         result_path = os.path.join(compute_model_path(arg, 'binrel'), label)
         logger.info('Started testing model [%s] for label [%s] from path [%s].',
                     arg.model_name, label, result_path)
@@ -74,18 +76,19 @@ def test_binrel(arg) -> int:
         )
         collector = ResultsCollector()
         results = run_test(
-            arg, mc, _get_training_args(arg, result_path), test_data, label, text_field, collector.collect
+            arg, mc, _get_training_args(arg, result_path), test_data, label, text_fields, collector.collect
         )
-        write_test_results(arg, results, [label])
+        result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
+        result_writer.write(results, 'binrel-' + arg.model_name + '-' + label, label)
         test_data['p_' + label] = collector.y_pred
 
         # reset model name back to None to be recomputed
         if compute_m_name:
             arg.model_name = None
 
-    arg.model_name = compute_model_name(arg, None, True)  # model name w/o label
+    arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
     test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(compute_model_path(arg, 'binrel'), 'predicted.cvs')
+    test_pred_path = os.path.join(compute_model_path(arg, 'binrel'), arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
     return 0
 
@@ -95,11 +98,11 @@ def test_lpset(arg) -> int:
     if not labels:
         return 1
 
-    text_field = 'body'
+    text_fields = ['body']
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
-    arg.model_name = compute_model_name(arg, labels)
+    arg.model_name = compute_model_name(arg, text_fields, labels)
     result_path = compute_model_path(arg, 'lpset')
     logger.info('Started testing model [%s] for label [%s] from path [%s].',
                 arg.model_name, labels, result_path)
@@ -113,14 +116,15 @@ def test_lpset(arg) -> int:
 
     collector = ResultsCollector()
     results = run_test(
-        arg, mc, _get_training_args(arg, result_path), test_data, labels, text_field, collector.collect
+        arg, mc, _get_training_args(arg, result_path), test_data, labels, text_fields, collector.collect
     )
-    write_test_results(arg, results, labels)
+    result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
+    result_writer.write(results, 'lpset-' + arg.model_name)
 
     for lx, lbl in enumerate(labels):
         test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
 
     test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(compute_model_path(arg, 'lpset'), 'predicted.cvs')
+    test_pred_path = os.path.join(compute_model_path(arg, 'lpset'), arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
     return 0

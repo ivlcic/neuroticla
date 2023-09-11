@@ -95,12 +95,20 @@ class TokenClassifyDataset(ClassifyDataset):
 class SeqClassifyDataset(ClassifyDataset):
 
     def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame, max_seq_len: int,
-                 label_field: Union[str, List[str]] = 'label', text_field: Union[str, List[str]] = 'text'):
+                 label_field: Union[str, List[str]] = 'label', text_fields: Union[str, List[str]] = 'text'):
         """Encodes the text data and labels
                 """
-        super().__init__(labeler, tokenizer, max_seq_len, label_field, text_field)
+        super().__init__(labeler, tokenizer, max_seq_len, label_field, text_fields)
+
         # encode the text
-        texts = data[text_field].values.tolist()
+        if isinstance(text_fields, str):
+            text_fields = [text_fields]
+
+        texts = []
+        for i, row in data.iterrows():
+            concatenated_string = '\n'.join([str(row[col]) for col in text_fields])
+            texts.append(concatenated_string)
+
         self.encodings: BatchEncoding = tokenizer(
             texts,
             padding='max_length',
