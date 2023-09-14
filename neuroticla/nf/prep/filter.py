@@ -80,6 +80,9 @@ class DataFilter:
     def required_cols(self) -> List[str]:
         return []
 
+    def label_cols(self) -> List[str]:
+        return []
+
     def load(self) -> None:
         tm = self.type_mapping()
         ic = self.include_cols()
@@ -140,3 +143,6 @@ class DataFilter:
         csv_file = os.path.join(self.target_dir_path, 'filtered.csv')
         self.df.to_csv(csv_file, index=False)
         return [csv_file]
+
+    def data(self) -> pd.DataFrame:
+        return self.df

@@ -101,6 +101,9 @@ class AussdaLongDataFilter(AussdaDataFilter):
         ])
         return cols
 
+    def label_cols(self) -> List[str]:
+        return ['eco', 'lab', 'wel', 'sec', 'cul']
+
     def save(self) -> List[str]:
         dfa: pd.DataFrame = self.df[self.df['filter_corpus_A'] == 1]
         logger.info("Got CVS Aussda data size corpus A [%s].", dfa.shape[0])
@@ -134,6 +137,9 @@ class AussdaShortDataFilter(AussdaLongDataFilter):
         cols.remove('filter_corpus_A')
         cols.remove('filter_corpus_B')
         return cols
+
+    def label_cols(self) -> List[str]:
+        return ['eco', 'lab', 'wel', 'sec', 'cul']
 
     def save(self) -> List[str]:
         logger.info("Got CVS Aussda short term data size corpus [%s].", self.df.shape[0])
@@ -180,6 +186,9 @@ class AussdaManualDataFilter(AussdaDataFilter):
             'reminderid_doc_id', 'm_fr_eco', 'm_fr_lab', 'm_fr_wel', 'm_fr_sec'
         ])
         return cols
+
+    def label_cols(self) -> List[str]:
+        return ['eco', 'lab', 'wel', 'sec']
 
     def save(self) -> List[str]:
         logger.info("Got CVS Aussda manual data size corpus [%s].", self.df.shape[0])

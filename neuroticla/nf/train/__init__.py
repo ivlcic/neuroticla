@@ -24,8 +24,16 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         '-u', '--subset', type=str, default=None,
         help='Subset of the labels to use for training (comma separated: ' + labels + ')',
     )
-    parser.add_argument('pretrained_model', help='Pretrained model to use for fine tuning',
-                        choices=['mcbert', 'xlmrb', 'xlmrl'])
+    text_fields = ','.join(get_all_text_fields())
+    parser.add_argument(
+        '-f', '--fields', type=str, default='body', required=False,
+        help='Text fields to use for training: ' + text_fields + ')',
+    )
+    parser.add_argument(
+        '-p', '--pretrained_model', type=str, required=True,
+        help='Pretrained model that was used for fine tuning (used only for model name construction)',
+        choices=['mcbert', 'xlmrb', 'xlmrl']
+    )
 
     parser.add_argument('corpora', type=str, default=None,
                         help='Corpora prefix or path prefix to use for training')
@@ -56,7 +64,7 @@ def train_binrel(arg) -> int:
     if not labels:
         return 1
 
-    text_fields = ['body']
+    text_fields = get_text_fields(arg)
     compute_m_name = arg.model_name is None
 
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
@@ -107,7 +115,7 @@ def train_lpset(arg) -> int:
     if not labels:
         return 1
 
-    text_fields = ['body']
+    text_fields = get_text_fields(arg)
 
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))

@@ -9,6 +9,7 @@ MODULE_DESCRIPTOR = ModuleDescriptor(
         CommandArguments('split', 'Splits the data'),
         CommandArguments('train', 'Train for the news framing detection', multi_action=True),
         CommandArguments('test', 'Test news framing detection models', multi_action=True),
+        CommandArguments('analyze', 'Analyze corpus'),
         CommandArguments('unittest', 'Internal tests'),
         CommandArguments('slomcor', 'Retrieve Slovenian Migration Corpus')
     ])

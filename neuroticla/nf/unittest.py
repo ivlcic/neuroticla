@@ -147,5 +147,26 @@ def unittest_transpose(arg):
     print(arr.transpose())
 
 
-def unittest_sample(arg) -> int:
-    pass
+def unittest_pandas(arg) -> int:
+    import pandas as pd
+
+    # Create a sample DataFrame with an additional numerical column ('inventory')
+    data = {
+        'country': ['USA', 'USA', 'USA', 'USA', 'India', 'India', 'India'],
+        'media': ['TV', 'Online', 'TV', 'TV', 'Online', 'TV', 'Newspaper'],
+        'sales': [100, 150, 200, 50, 75, 50, 25],
+        'eco': [1, 0, 1, 1, 0, 1, 0],
+        'lab': [1, 0, 1, 1, 0, 1, 0]
+    }
+
+    df = pd.DataFrame(data)
+
+    # Perform multiple aggregation operations in one go
+    grouped_df = df.groupby(['country', 'media']).agg(
+        count=pd.NamedAgg(column='sales', aggfunc='count'),
+        eco=pd.NamedAgg(column='eco', aggfunc='sum'),
+        lab=pd.NamedAgg(column='lab', aggfunc='sum')
+    ).reset_index()
+    print(grouped_df)
+
+

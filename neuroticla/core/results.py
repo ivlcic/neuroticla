@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 import numpy as np
 
@@ -19,21 +19,22 @@ class NpEncoder(json.JSONEncoder):
 
 class ResultWriter:
 
-    def __init__(self, result_dir: str, model_dir: str, total_name: str = 'results_all'):
+    def __init__(self, result_dir: str, model_dir: str, total_name: Union[str, None] = 'results_all'):
         self._result_dir = result_dir
         self._model_dir = model_dir
         self._total_name = total_name
 
     def write(self, results: Dict[str, Any], model_name: str, r_base_name: str = None):
         combined_results = {}
-        total_path = os.path.join(self._result_dir, self._total_name + '.json')
-        if os.path.exists(total_path):
-            with open(total_path) as json_file:
-                combined_results = json.load(json_file)
+        if self._total_name is not None:
+            total_path = os.path.join(self._result_dir, self._total_name + '.json')
+            if os.path.exists(total_path):
+                with open(total_path) as json_file:
+                    combined_results = json.load(json_file)
 
-        combined_results[model_name] = results
-        with open(total_path, 'wt', encoding='utf-8') as fp:
-            json.dump(combined_results, fp, cls=NpEncoder, indent=2)
+            combined_results[model_name] = results
+            with open(total_path, 'wt', encoding='utf-8') as fp:
+                json.dump(combined_results, fp, cls=NpEncoder, indent=2)
 
         f_name = os.path.join(self._model_dir, model_name + ".json") if r_base_name is None \
             else os.path.join(self._model_dir, r_base_name + ".json")

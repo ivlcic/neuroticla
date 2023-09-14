@@ -26,21 +26,42 @@ def get_labels(module_name: str, arg) -> List[str]:
     return labels
 
 
+def get_all_text_fields() -> List[str]:
+    return ['title', 'body']
+
+
+def get_text_fields(arg) -> List[str]:
+    text_fields = get_all_text_fields()
+    if arg.fields is not None:
+        fields = arg.fields.split(',')
+        if all(item in text_fields for item in fields):
+            text_fields = fields
+        else:
+            logger.error('Invalid text fields: %s', arg.fields)
+            return []
+    return text_fields
+
+
 def get_data_path_prefix(arg) -> List[str]:
     data_paths = [os.path.join(arg.data_in_dir, arg.corpora)]
     return data_paths
 
 
-def compute_model_name(arg, text_fields: List[str], labels: List[str] = None, force_label: bool = False) -> str:
+def get_labels_str(labels: List[str]) -> str:
     l_str = ''
     if labels is not None:
         l_str = '.l-' + '_'.join(labels)
+    return l_str
+
+
+def compute_model_name(arg, text_fields: List[str], labels: List[str] = None, force_label: bool = False) -> str:
+    l_str = get_labels_str(labels)
     f_str = ''
     if text_fields is not None:
         f_str = '.f-' + '_'.join([text_field[0] for text_field in text_fields if text_field])
     if arg.model_name is not None:
         if force_label:
-            m = f'{arg.model_name}{f_str}{l_str}'
+            m = f'{arg.model_name}{l_str}'
         else:
             m = arg.model_name
     else:
