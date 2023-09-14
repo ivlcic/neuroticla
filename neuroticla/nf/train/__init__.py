@@ -30,11 +30,10 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         help='Text fields to use for training: ' + text_fields + ')',
     )
     parser.add_argument(
-        '-p', '--pretrained_model', type=str, required=True,
-        help='Pretrained model that was used for fine tuning (used only for model name construction)',
+        '-p', '--pretrained_model', type=str, default=None, required=False,
+        help='Pretrained model that should be used for fine tuning',
         choices=['mcbert', 'xlmrb', 'xlmrl']
     )
-
     parser.add_argument('corpora', type=str, default=None,
                         help='Corpora prefix or path prefix to use for training')
 

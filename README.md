@@ -268,14 +268,35 @@ Which is based on
 
 ### Train
 ```
-./nf train binrel --tqdm -e 20 -b 12 -u eco mcbert aussda_manual
-./nf train binrel --tqdm -e 20 -b 12 -u eco xlmrb aussda_manual
-./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec mcbert aussda_manual
-./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec xlmrb aussda_manual
+./nf train binrel --tqdm -e 20 -b 12 -u eco -p mcbert aussda_manual
+./nf train binrel --tqdm -e 20 -b 12 -u eco -p xlmrb aussda_manual
+./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec -p mcbert aussda_manual
+./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec -p xlmrb aussda_manual
 ```
 
 # Test
+Epochs and pretrained model names are used just for model name computation.
 ```
-./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec mcbert aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec mcbert aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_manual
+# the same would be: ./nf test binrel --tqdm -b 24 -u eco,lab,wel,sec -n mcbert.e20.b24.l2e-05.aussda_manual.f-b aussda_manual
+# so, it is shorter to construct model name from training params in this case
+ 
+./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_manual
+./nf test majority -u eco,lab,wel,sec aussda_manual
+
+./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_short
+./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
+./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_short
+./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
+./nf test majority eco,lab,wel,sec aussda_short
+
+./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p mcbert aussda_short
+# the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_short.f-b aussda_short
+
+./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p xlmrb aussda_short
+./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p mcbert aussda_short
+./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p xlmrb aussda_short
+./nf test majority eco,lab,wel,sec,cul aussda_short
 ```

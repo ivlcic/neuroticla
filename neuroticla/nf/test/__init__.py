@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import numpy as np
@@ -85,7 +86,7 @@ def test_majority(arg) -> int:
         global_true.append(test_data[label].tolist())
 
     test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(result_path, arg.model_name + '.cvs')
+    test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
 
     # write label indicator arrays
@@ -144,7 +145,7 @@ def test_binrel(arg) -> int:
     arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
     result_path = os.path.join(compute_model_path(arg, 'binrel'))
     test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(result_path, arg.model_name + l_str + '.cvs')
+    test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + l_str + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
 
     # compute combined results
@@ -190,6 +191,6 @@ def test_lpset(arg) -> int:
         test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
 
     test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(compute_model_path(arg, 'lpset'), arg.model_name + '.cvs')
+    test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
     return 0
