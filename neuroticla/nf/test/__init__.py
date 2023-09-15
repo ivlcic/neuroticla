@@ -1,7 +1,8 @@
-import os
-from typing import Any
-
+import random
+import pandas as pd
 import numpy as np
+
+from typing import Any
 
 from transformers import TrainingArguments
 
@@ -71,7 +72,7 @@ def test_majority(arg) -> int:
 
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
-    arg.model_name = f'majority{get_labels_str(labels)}'
+    arg.model_name = f'majority.{arg.corpora}{get_labels_str(labels)}'
     result_path = compute_model_path(arg, 'baseline')
     logger.info('Started testing model [%s] for label [%s] from path [%s].',
                 arg.model_name, labels, result_path)
@@ -80,7 +81,61 @@ def test_majority(arg) -> int:
     global_true = []
     global_pred = []
     for label in labels:
-        y_pred = [0] * test_data.shape[0]
+        y_pred = [0] * test_data.shape[0]  # all zeros is a majority class / label combination
+        test_data['p_' + label] = y_pred
+        global_pred.append(y_pred)
+        global_true.append(test_data[label].tolist())
+
+    test_data.drop(['body', 'lead'], axis=1, inplace=True)
+    test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + '.cvs')
+    test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
+
+    # write label indicator arrays
+    global_true: List[Any] = np.array(global_true).transpose().tolist()
+    global_pred: List[Any] = np.array(global_pred).transpose().tolist()
+    metrics = ClassificationMetrics()
+    global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
+
+    result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
+    result_writer.write(global_results, 'baseline-' + arg.model_name)
+    return 0
+
+
+def test_random(arg) -> int:
+    labels = get_labels('nf', arg)
+    if not labels:
+        return 1
+
+    # load the data and tokenize it
+    train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
+    arg.model_name = f'random.{arg.corpora}{get_labels_str(labels)}'
+    result_path = compute_model_path(arg, 'baseline')
+    logger.info('Started testing model [%s] for label [%s] from path [%s].',
+                arg.model_name, labels, result_path)
+
+    # create random test set
+    data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
+    # Create a new column to store the label combinations
+    data['comb'] = data[labels].apply(lambda row: ''.join(row.astype(str)), axis=1)
+    # Calculate frequencies for each string combination
+    combination_freq = data['comb'].value_counts().reset_index()
+    combination_freq.columns = ['comb', 'freq']
+
+    combos = pd.DataFrame({
+        'comb': random.choices(
+                    combination_freq['comb'].values.tolist(),
+                    combination_freq['freq'].values.tolist(),
+                    k=test_data.shape[0]
+                )
+    })
+    split_combos = combos['comb'].apply(lambda x: pd.Series([int(i) for i in list(x)]))
+    split_combos.columns = labels
+
+    logger.info('Testing labels: %s with device [%s]', labels, arg.device)
+    global_true = []
+    global_pred = []
+    for label in labels:
+        y_pred = split_combos[label].values.tolist()
         test_data['p_' + label] = y_pred
         global_pred.append(y_pred)
         global_true.append(test_data[label].tolist())
@@ -132,7 +187,7 @@ def test_binrel(arg) -> int:
         result_writer = ResultWriter(
             arg.result_dir, os.path.dirname(result_path), None
         )
-        result_writer.write(results, 'binrel-' + arg.model_name + get_labels_str([label]), label)
+        result_writer.write(results, 'binrel.' + arg.model_name + get_labels_str([label]), label)
         test_data['p_' + label] = collector.y_pred
         global_true.append(collector.y_true)
         global_pred.append(collector.y_pred)
@@ -145,7 +200,7 @@ def test_binrel(arg) -> int:
     arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
     result_path = os.path.join(compute_model_path(arg, 'binrel'))
     test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + l_str + '.cvs')
+    test_pred_path = os.path.join(os.path.dirname(result_path), 'binrel.' + arg.model_name + l_str + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
 
     # compute combined results
@@ -155,7 +210,7 @@ def test_binrel(arg) -> int:
     global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
 
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
-    result_writer.write(global_results, 'binrel-' + arg.model_name + l_str)
+    result_writer.write(global_results, 'binrel.' + arg.model_name + l_str)
     return 0
 
 
@@ -185,12 +240,12 @@ def test_lpset(arg) -> int:
         arg, mc, _get_training_args(arg, result_path), test_data, labels, text_fields, collector.collect
     )
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
-    result_writer.write(results, 'lpset-' + arg.model_name)
+    result_writer.write(results, 'lpset.' + arg.model_name)
 
     for lx, lbl in enumerate(labels):
         test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
 
     test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + '.cvs')
+    test_pred_path = os.path.join(os.path.dirname(result_path), 'lpset.' + arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
     return 0

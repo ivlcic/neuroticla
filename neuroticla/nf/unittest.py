@@ -147,6 +147,37 @@ def unittest_transpose(arg):
     print(arr.transpose())
 
 
+def unittest_c_report(arg) -> int:
+    y_true = [
+        [0, 0, 0, 1],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, 1, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [1, 1, 1, 1],
+        [0, 1, 1, 1]
+    ]
+    y_pred = [
+        [0, 0, 0, 1],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
+        [1, 1, 0, 1]
+    ]
+    print(metrics.classification_report(y_true, y_pred, digits=3, target_names=['eco', 'lab', 'wel', 'sec']))
+    print(metrics.precision_score(y_true, y_pred, labels=['eco', 'lab', 'wel', 'sec']))
+    print(metrics.f1_score(y_true, y_pred, average='macro'))
+    print(metrics.f1_score(y_true, y_pred, average='micro'))
+    print(metrics.f1_score(y_true, y_pred, average='weighted'))
+    return 0
+
+
 def unittest_pandas(arg) -> int:
     import pandas as pd
 
@@ -168,5 +199,6 @@ def unittest_pandas(arg) -> int:
         lab=pd.NamedAgg(column='lab', aggfunc='sum')
     ).reset_index()
     print(grouped_df)
+    return 0
 
 
