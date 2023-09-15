@@ -64,7 +64,7 @@ def train_binrel(arg) -> int:
         return 1
 
     text_fields = get_text_fields(arg)
-    compute_m_name = arg.model_name is None
+    computed_name = arg.model_name
 
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
     for label in labels:
@@ -101,9 +101,9 @@ def train_binrel(arg) -> int:
         logger.info('Writing [%s] to [%s].', arg.model_name, result_path)
         ModelContainer.remove_checkpoint_dir(result_path)
 
-        # reset model name back to None (if that was at the beginning) to be recomputed
-        if compute_m_name:
-            arg.model_name = None
+        # reset model name back to original
+        if computed_name:
+            arg.model_name = computed_name
 
     return 0
 
