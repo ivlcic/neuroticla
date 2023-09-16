@@ -101,11 +101,7 @@ def train_binrel(arg) -> int:
         # train the model
         mc.build(training_args, train_set, eval_set)
 
-        results = run_test(arg, mc, training_args, test_data, label)
-        result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
-        result_writer.write(results, 'binrel-' + arg.model_name + '-' + label, label)
-        logger.info('Writing [%s] to [%s].', arg.model_name, result_path)
-
+        # test the model
         collector = ResultsCollector()
         results = run_test(
             arg, mc, training_args, test_data, label, text_fields, collector.collect

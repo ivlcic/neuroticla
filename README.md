@@ -296,10 +296,10 @@ Epochs and pretrained model names are used just for model name computation.
 ./nf test binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual
-./nf train binrel --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
-./nf train binrel --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
-./nf train lpset --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
-./nf train lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
 ./nf test majority aussda_manual
 ./nf test random aussda_manual
 

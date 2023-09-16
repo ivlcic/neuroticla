@@ -229,7 +229,7 @@ def test_lpset(arg) -> int:
 
     arg.model_name = compute_model_name(arg, text_fields, labels)
     result_path = compute_model_path(arg, 'lpset')
-    logger.info('Started testing model [%s] for labels [%s] from path [%s].',
+    logger.info('Started testing model [%s] for labels %s from path [%s].',
                 arg.model_name, labels, result_path)
 
     logger.info('Testing labels: %s with device [%s]', labels, arg.device)
