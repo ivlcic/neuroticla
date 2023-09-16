@@ -1,13 +1,16 @@
 import os.path
+from typing import Any
+
+import numpy as np
 
 from transformers import TrainingArguments
 
-from ..test import run_test
+from ..test import run_test, ResultsCollector
 from ...core.dataset import SeqClassifyDataset
 from ...core.labels import BinaryLabeler, MultiLabeler
 from ...core.results import ResultWriter
 from ...core.split import DataSplit
-from ...core.trans import SeqClassifyModel, ModelContainer
+from ...core.trans import SeqClassifyModel, ModelContainer, ClassificationMetrics
 from ...nf.utils import *
 
 logger = logging.getLogger('nf.train')
@@ -19,7 +22,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
     parser.add_argument(
         '-n', '--model_name', help='Target model name.', type=str, default=None
     )
-    labels = ','.join(get_all_labels(module_name))
+    labels = ','.join(get_all_labels())
     parser.add_argument(
         '-u', '--subset', type=str, default=None,
         help='Subset of the labels to use for training (comma separated: ' + labels + ')',
@@ -59,13 +62,16 @@ def _get_training_args(arg, result_path: str) -> TrainingArguments:
 
 def train_binrel(arg) -> int:
     logger.info('Starting binary relevance training ...')
-    labels = get_labels('nf', arg)
+    labels = get_labels(arg)
     if not labels:
         return 1
-
+    l_str = get_labels_str(labels)
     text_fields = get_text_fields(arg)
+    logger.info('Started training for labels %s and text fields %s.', labels, text_fields)
     computed_name = arg.model_name
 
+    global_true = []
+    global_pred = []
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
     for label in labels:
         arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
@@ -99,23 +105,51 @@ def train_binrel(arg) -> int:
         result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
         result_writer.write(results, 'binrel-' + arg.model_name + '-' + label, label)
         logger.info('Writing [%s] to [%s].', arg.model_name, result_path)
+
+        collector = ResultsCollector()
+        results = run_test(
+            arg, mc, training_args, test_data, label, text_fields, collector.collect
+        )
+        result_writer = ResultWriter(
+            arg.result_dir, os.path.dirname(result_path), None
+        )
+        result_writer.write(results, 'binrel.' + arg.model_name + get_labels_str([label]), label)
+        test_data['p_' + label] = collector.y_pred
+        global_true.append(collector.y_true)
+        global_pred.append(collector.y_pred)
+
         ModelContainer.remove_checkpoint_dir(result_path)
 
         # reset model name back to original
         if computed_name:
             arg.model_name = computed_name
 
+    # write predictions
+    arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
+    result_path = os.path.join(compute_model_path(arg, 'binrel'))
+    test_data.drop(['body', 'lead'], axis=1, inplace=True)
+    test_pred_path = os.path.join(os.path.dirname(result_path), 'binrel.' + arg.model_name + l_str + '.cvs')
+    test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
+
+    # compute combined results
+    global_true: List[Any] = np.array(global_true).transpose().tolist()
+    global_pred: List[Any] = np.array(global_pred).transpose().tolist()
+    metrics = ClassificationMetrics()
+    global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
+
+    result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
+    result_writer.write(global_results, 'binrel.' + arg.model_name + l_str)
     return 0
 
 
 def train_lpset(arg) -> int:
-    logger.info("Starting label power-set ...")
-    labels = get_labels('nf', arg)
+    logger.info("Starting label power-set training ...")
+    labels = get_labels(arg)
     if not labels:
         return 1
 
     text_fields = get_text_fields(arg)
-
+    logger.info('Started training for labels %s and text fields %s.', labels, text_fields)
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
@@ -145,9 +179,19 @@ def train_lpset(arg) -> int:
     # train the model
     mc.build(training_args, train_set, eval_set)
 
-    results = run_test(arg, mc, training_args, test_data, labels)
+    collector = ResultsCollector()
+    results = run_test(
+        arg, mc, training_args, test_data, labels, text_fields, collector.collect
+    )
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
-    result_writer.write(results, 'lpset-' + arg.model_name)
+    result_writer.write(results, 'lpset.' + arg.model_name)
+
+    for lx, lbl in enumerate(labels):
+        test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
+
+    test_data.drop(['body', 'lead'], axis=1, inplace=True)
+    test_pred_path = os.path.join(os.path.dirname(result_path), 'lpset.' + arg.model_name + '.cvs')
+    test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
 
     ModelContainer.remove_checkpoint_dir(result_path)
     return 0

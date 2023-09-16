@@ -1,21 +1,31 @@
 import logging
 import os
 from argparse import ArgumentParser
-from typing import List
+from typing import List, Union
 
 from ..core.args import CommonArguments
 
 logger = logging.getLogger('nf.utils')
 
 
-def get_all_labels(module_name: str) -> List[str]:
-    labels_file = os.path.join(CommonArguments.data_path(module_name, 'processed'), 'tags.csv')
-    labels = open(labels_file, 'r').read().split('\n')
+def get_all_labels(corpora: Union[str, None] = None) -> List[str]:
+    labels_file = os.path.join(
+        CommonArguments.data_path('nf', 'processed'), 'tags.csv'
+    )
+    if corpora is None:
+        corpora = ''
+    corpora_labels_file = os.path.join(
+        CommonArguments.data_path('nf', 'processed'), corpora + '.tags.csv'
+    )
+    if os.path.exists(corpora_labels_file):
+        labels = open(corpora_labels_file, 'r').read().split('\n')
+    else:
+        labels = open(labels_file, 'r').read().split('\n')
     return labels
 
 
-def get_labels(module_name: str, arg) -> List[str]:
-    labels = get_all_labels(module_name)
+def get_labels(arg) -> List[str]:
+    labels = get_all_labels(arg.corpora)
     if arg.subset is not None:
         subset = arg.subset.split(',')
         if all(item in labels for item in subset):

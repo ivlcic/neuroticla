@@ -36,7 +36,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         '-n', '--model_name', type=str, default=None,
         help='Target model name. (overrides other settings used for model name construction)',
     )
-    labels = ','.join(get_all_labels(module_name))
+    labels = ','.join(get_all_labels())
     parser.add_argument(
         '-u', '--subset', type=str, default=None, required=False,
         help='Subset of the labels to use for training (comma separated: ' + labels + ')',
@@ -66,7 +66,7 @@ def _get_training_args(arg, result_path: str) -> TrainingArguments:
 
 
 def test_majority(arg) -> int:
-    labels = get_labels('nf', arg)
+    labels = get_labels(arg)
     if not labels:
         return 1
 
@@ -74,7 +74,7 @@ def test_majority(arg) -> int:
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
     arg.model_name = f'majority.{arg.corpora}{get_labels_str(labels)}'
     result_path = compute_model_path(arg, 'baseline')
-    logger.info('Started testing model [%s] for label [%s] from path [%s].',
+    logger.info('Started testing model [%s] for labels %s from path [%s].',
                 arg.model_name, labels, result_path)
 
     logger.info('Testing labels: %s with device [%s]', labels, arg.device)
@@ -102,7 +102,7 @@ def test_majority(arg) -> int:
 
 
 def test_random(arg) -> int:
-    labels = get_labels('nf', arg)
+    labels = get_labels(arg)
     if not labels:
         return 1
 
@@ -110,7 +110,7 @@ def test_random(arg) -> int:
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
     arg.model_name = f'random.{arg.corpora}{get_labels_str(labels)}'
     result_path = compute_model_path(arg, 'baseline')
-    logger.info('Started testing model [%s] for label [%s] from path [%s].',
+    logger.info('Started testing model [%s] for labels %s from path [%s].',
                 arg.model_name, labels, result_path)
 
     # create random test set
@@ -156,12 +156,14 @@ def test_random(arg) -> int:
 
 
 def test_binrel(arg) -> int:
-    labels = get_labels('nf', arg)
+    labels = get_labels(arg)
     if not labels:
         return 1
-    l_str = get_labels_str(labels)
 
+    l_str = get_labels_str(labels)
     text_fields = get_text_fields(arg)
+    logger.info('Started testing for labels %s and text fields %s.', labels, text_fields)
+
     computed_name = arg.model_name
 
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
@@ -215,17 +217,19 @@ def test_binrel(arg) -> int:
 
 
 def test_lpset(arg) -> int:
-    labels = get_labels('nf', arg)
+    labels = get_labels(arg)
     if not labels:
         return 1
 
     text_fields = get_text_fields(arg)
+    logger.info('Started testing for labels %s and text fields %s.', labels, text_fields)
+
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
 
     arg.model_name = compute_model_name(arg, text_fields, labels)
     result_path = compute_model_path(arg, 'lpset')
-    logger.info('Started testing model [%s] for label [%s] from path [%s].',
+    logger.info('Started testing model [%s] for labels [%s] from path [%s].',
                 arg.model_name, labels, result_path)
 
     logger.info('Testing labels: %s with device [%s]', labels, arg.device)

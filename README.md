@@ -267,36 +267,63 @@ Which is based on
 ```
 
 ### Train
+By default, only a body field is used for the training, and subset of frame tags is selected based on corpora:
 ```
-./nf train binrel --tqdm -e 20 -b 12 -u eco -p mcbert aussda_manual
-./nf train binrel --tqdm -e 20 -b 12 -u eco -p xlmrb aussda_manual
-./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec -p mcbert aussda_manual
-./nf train lpset --tqdm -e 20 -b 12 -u eco,lab,wel,sec -p xlmrb aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -u eco -p mcbert aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -u eco -p xlmrb aussda_manual
+
+./nf train binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+
+./nf train lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual
+./nf train lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+```
+For usage of an additional text fields you have to enumerate them:
+```
+./nf train binrel --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+
+./nf train lpset --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
+./nf train lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
 ```
 
-# Test
+### Test
 Epochs and pretrained model names are used just for model name computation.
 ```
-./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_manual
-# the same would be: ./nf test binrel --tqdm -b 24 -u eco,lab,wel,sec -n mcbert.e20.b24.l2e-05.aussda_manual.f-b aussda_manual
-# so, it is shorter to construct model name from training params in this case
- 
-./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_manual
-./nf test majority -u eco,lab,wel,sec aussda_manual
+# the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_manual.f-b aussda_manual
+# so it is shorter to construct model name from training params 
+./nf test binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+./nf train lpset --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
+./nf train lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+./nf test majority aussda_manual
+./nf test random aussda_manual
+
+# the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_short.f-b aussda_short
+./nf test binrel --tqdm -e 20 -b 24 -p mcbert aussda_short
+./nf test binrel --tqdm -e 20 -b 24 -p xlmrb aussda_short
+./nf test lpset --tqdm -e 20 -b 24 -p mcbert aussda_short
+./nf test lpset --tqdm -e 20 -b 24 -p xlmrb aussda_short
+./nf test majority aussda_short
+./nf test random aussda_short
 
 ./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_short
 ./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
 ./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_short
 ./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
-./nf test majority eco,lab,wel,sec aussda_short
-
-./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p mcbert aussda_short
-# the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_short.f-b aussda_short
-
-./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p xlmrb aussda_short
-./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p mcbert aussda_short
-./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec,cul -p xlmrb aussda_short
-./nf test majority eco,lab,wel,sec,cul aussda_short
+./nf test majority -u eco,lab,wel,sec aussda_short
+./nf test random -u eco,lab,wel,sec aussda_short
 ```
+Simirarly model names are used just for model name computation.
+```
+
+```
+
+
+Todo 
+- convert test results json to tsv/csv
+- infer xmodel on other corpora
