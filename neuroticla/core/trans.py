@@ -5,13 +5,13 @@ import numpy as np
 import torch
 import evaluate
 
-from typing import List, Any, Dict, Union, Callable
+from typing import List, Dict, Union, Callable
 
 from torch.nn.modules.module import T
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForTokenClassification, \
     PreTrainedModel, PreTrainedTokenizer, TrainingArguments, Trainer
-from sklearn import metrics
 
+from .eval import ClassificationMetrics, MultilabelMetrics
 from .labels import Labeler, MultiLabeler, BinaryLabeler
 from .dataset import ClassifyDataset
 
@@ -209,91 +209,15 @@ class TokenClassifyModel(ModelContainer):
         return result
 
 
-class ClassificationMetrics:
-
-    @classmethod
-    def flatten_1hot(cls, indicators: Union[List, np.array], binary: bool = True) -> List:
-        result = []
-        for indicator in indicators:
-            for i, v in enumerate(indicator):
-                result.append((i * (2 if binary else 1)) + (0 if v == 0 else 1))
-        return result
-
-    @classmethod
-    def score(cls, references: List[Any], predictions: List[Any], labels: List[str], average: str = 'binary'):
-        f1 = metrics.f1_score(references, predictions, zero_division=0, labels=labels, average=average)
-        precision = metrics.precision_score(references, predictions, zero_division=0, labels=labels, average=average)
-        recall = metrics.recall_score(references, predictions, zero_division=0, labels=labels, average=average)
-        result = {
-            'f1': f1,
-            'p': precision,
-            'r': recall,
-            's': len(references)
-        }
-        if average == 'binary':
-            result['a'] = metrics.accuracy_score(references, predictions)
-        return result
-
-    @classmethod
-    def for_binary_eval(cls, labels: List[str]) -> List[str]:
-        return [lx + suffix for lx in labels for suffix in ['-0', '-1']]
-
-    def compute(self, references: List[Any], predictions: List[Any], labels: List[str], output_dict: bool = True):
-        result: Dict[str, Any] = {
-            'avg': {
-                'micro': {},
-                'macro': {},
-                'weighted': {}
-            },
-            'accuracy': 0,
-            'hamming': 0,
-            'labels': {}
-        }
-        bin_labels = ClassificationMetrics.for_binary_eval(labels)
-        if len(predictions) > 0 and (isinstance(predictions[0], List) or isinstance(predictions[0], np.ndarray)):
-            # we assume label indicator array / sparse matrix and two times more labels than sample dimensions
-            y_pred = ClassificationMetrics.flatten_1hot(predictions)
-            y_true = ClassificationMetrics.flatten_1hot(references)
-        else:
-            y_pred = predictions
-            y_true = references
-
-        cr: Dict[str, Any] = metrics.classification_report(
-            y_true, y_pred, digits=3, zero_division=0, output_dict=output_dict, target_names=bin_labels
-        )
-        l_indices = []
-        for i, label in enumerate(bin_labels):
-            result['labels'][label] = {
-                'f1': cr[label]['f1-score'], 'p': cr[label]['precision'],
-                'r': cr[label]['recall'], 's': cr[label]['support']
-            }
-            l_indices.append(i)
-
-        result['avg']['macro'] = {
-            'f1': cr['macro avg']['f1-score'], 'p': cr['macro avg']['precision'],
-            'r': cr['macro avg']['recall'], 's': cr['macro avg']['support']
-        }
-        result['avg']['weighted'] = {
-            'f1': cr['weighted avg']['f1-score'], 'p': cr['weighted avg']['precision'],
-            'r': cr['weighted avg']['recall'], 's': cr['weighted avg']['support']
-        }
-        result['avg']['micro'] = ClassificationMetrics.score(y_true, y_pred, l_indices, 'micro')
-        if 'accuracy' not in cr and output_dict:
-            result['accuracy'] = metrics.accuracy_score(y_true, y_pred)
-        else:
-            result['accuracy'] = cr['accuracy']
-        result['hamming'] = metrics.hamming_loss(references, predictions)
-
-        return result
-
-
 class SeqClassifyModel(ModelContainer):
 
     def __init__(self, model_name_or_path: str, labeler: Labeler,
                  cache_model_dir: Union[str, None] = None, device: str = None):
         super(SeqClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir, device)
-
-        self._metric = ClassificationMetrics()  # SklearnClassificationReport()
+        if isinstance(self._labeler, MultiLabeler):  # here we have integer encoded every label combination
+            self._metric = MultilabelMetrics()
+        else:
+            self._metric = ClassificationMetrics()
         self._model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path, cache_dir=cache_model_dir, num_labels=labeler.mun_labels(),
             id2label=labeler.ids2labels(), label2id=labeler.labels2ids()

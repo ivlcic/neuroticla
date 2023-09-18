@@ -10,7 +10,8 @@ from ...core.dataset import SeqClassifyDataset
 from ...core.labels import BinaryLabeler, MultiLabeler
 from ...core.results import ResultWriter
 from ...core.split import DataSplit
-from ...core.trans import SeqClassifyModel, ModelContainer, ClassificationMetrics
+from ...core.trans import SeqClassifyModel, ModelContainer
+from ...core.eval import ClassificationMetrics
 from ...nf.utils import *
 
 logger = logging.getLogger('nf.train')

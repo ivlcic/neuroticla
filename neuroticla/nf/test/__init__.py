@@ -10,7 +10,8 @@ from .common import run_test
 from ...core.labels import BinaryLabeler, MultiLabeler, Labeler
 from ...core.results import ResultWriter
 from ...core.split import DataSplit
-from ...core.trans import SeqClassifyModel, ClassificationMetrics
+from ...core.trans import SeqClassifyModel
+from ...core.eval import ClassificationMetrics, MultilabelMetrics
 from ...nf.utils import *
 
 logger = logging.getLogger('nf.test')
@@ -93,7 +94,7 @@ def test_majority(arg) -> int:
     # write label indicator arrays
     global_true: List[Any] = np.array(global_true).transpose().tolist()
     global_pred: List[Any] = np.array(global_pred).transpose().tolist()
-    metrics = ClassificationMetrics()
+    metrics = MultilabelMetrics()
     global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
 
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
@@ -147,7 +148,7 @@ def test_random(arg) -> int:
     # write label indicator arrays
     global_true: List[Any] = np.array(global_true).transpose().tolist()
     global_pred: List[Any] = np.array(global_pred).transpose().tolist()
-    metrics = ClassificationMetrics()
+    metrics = MultilabelMetrics()
     global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
 
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
@@ -208,7 +209,7 @@ def test_binrel(arg) -> int:
     # compute combined results
     global_true: List[Any] = np.array(global_true).transpose().tolist()
     global_pred: List[Any] = np.array(global_pred).transpose().tolist()
-    metrics = ClassificationMetrics()
+    metrics = MultilabelMetrics()
     global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
 
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))

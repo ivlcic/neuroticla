@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 from sklearn import metrics
 
 from ..core.labels import MultiLabeler
-from ..core.trans import ClassificationMetrics
+from ..core.eval import ClassificationMetrics
 
 logger = logging.getLogger('nf.test')
 
