@@ -11,7 +11,7 @@ from ...core.labels import BinaryLabeler, MultiLabeler, Labeler
 from ...core.results import ResultWriter
 from ...core.split import DataSplit
 from ...core.trans import SeqClassifyModel
-from ...core.eval import ClassificationMetrics, MultilabelMetrics
+from ...core.eval import MultilabelMetrics
 from ...nf.utils import *
 
 logger = logging.getLogger('nf.test')

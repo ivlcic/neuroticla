@@ -11,7 +11,7 @@ from ...core.labels import BinaryLabeler, MultiLabeler
 from ...core.results import ResultWriter
 from ...core.split import DataSplit
 from ...core.trans import SeqClassifyModel, ModelContainer
-from ...core.eval import ClassificationMetrics
+from ...core.eval import MultilabelMetrics
 from ...nf.utils import *
 
 logger = logging.getLogger('nf.train')
@@ -131,7 +131,7 @@ def train_binrel(arg) -> int:
     # compute combined results
     global_true: List[Any] = np.array(global_true).transpose().tolist()
     global_pred: List[Any] = np.array(global_pred).transpose().tolist()
-    metrics = ClassificationMetrics()
+    metrics = MultilabelMetrics()
     global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
 
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
