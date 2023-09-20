@@ -272,20 +272,22 @@ By default, only a body field is used for the training, and subset of frame tags
 ./nf train binrel --tqdm -e 20 -b 24 -u eco -p mcbert aussda_manual
 ./nf train binrel --tqdm -e 20 -b 24 -u eco -p xlmrb aussda_manual
 
-./nf train binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual
-./nf train binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual &>/root/train-binrel-macro-xlmrb.log
+./nf train binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>/root/train-binrel-macro-mcbert.log
 
-./nf train lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual
-./nf train lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+./nf train lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual &>/root/train-lpset-macro-xlmrb.log
+./nf train lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>/root/train-lpset-macro-mcbert.log
 ```
 For usage of an additional text fields you have to enumerate them:
 ```
-./nf train binrel --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
-./nf train binrel --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+./nf train binrel --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/train-binrel-macro-tb-xlmrb.log
+./nf train binrel --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/train-binrel-macro-tb-mcbert.log
 
-./nf train lpset --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
-./nf train lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+./nf train lpset --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/train-lpset-macro-tb-xlmrb.log
+./nf train lpset --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/train-lpset-macro-tb-mcbert.log
 ```
+
+For usage of different average metric for best model selection you have to specify it:
 
 ### Test
 Epochs and pretrained model names are used just for model name computation.
