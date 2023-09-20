@@ -61,7 +61,7 @@ def _get_training_args(arg, result_path: str) -> TrainingArguments:
             optim='adamw_torch',
             # optim='adamw_hf',
             save_total_limit=1,
-            metric_for_best_model=arg.metric,
+            metric_for_best_model='f1',
             logging_strategy='epoch',
         )
 
@@ -90,7 +90,8 @@ def train_binrel(arg) -> int:
             ModelContainer.model_name_map[arg.pretrained_model],
             labeler=BinaryLabeler(labels=[label]),
             cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
-            device=arg.device
+            device=arg.device,
+            best_metric=arg.metric
         )
         logger.debug('Constructing train data set [%s]...', len(train_data))
         train_set = SeqClassifyDataset(
@@ -163,7 +164,8 @@ def train_lpset(arg) -> int:
         ModelContainer.model_name_map[arg.pretrained_model],
         labeler=MultiLabeler(labels=labels),
         cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
-        device=arg.device
+        device=arg.device,
+        best_metric=arg.metric
     )
 
     logger.debug("Constructing train data set [%s]...", len(train_data))

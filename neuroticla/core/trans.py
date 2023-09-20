@@ -47,13 +47,14 @@ class ModelContainer(torch.nn.Module):
                 shutil.rmtree(checkpoint_path)
                 logger.info('Removed checkpoint dir [%s].', checkpoint_path)
 
-    def __init__(self, model_name_or_path: str, labeler: Labeler,
-                 cache_model_dir: Union[str, None] = None, device: str = None):
+    def __init__(self, model_name_or_path: str, labeler: Labeler, cache_model_dir: Union[str, None] = None,
+                 device: str = None, best_metric: str = 'macro'):
         super().__init__()
 
         self._labeler: Labeler = labeler
         self._model: Union[PreTrainedModel, None] = None
         self._metric = None
+        self._best_metric = best_metric
         self._tokenizer: Union[PreTrainedTokenizer, None] = None
         self._tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, cache_dir=cache_model_dir
@@ -125,8 +126,10 @@ class ModelContainer(torch.nn.Module):
 class TokenClassifyModel(ModelContainer):
 
     def __init__(self, model_name_or_path: str, labeler: Labeler,
-                 cache_model_dir: Union[str, None] = None, device: str = None):
-        super(TokenClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir, device)
+                 cache_model_dir: Union[str, None] = None, device: str = None, best_metric: str = 'overall_f1'):
+        super(TokenClassifyModel, self).__init__(
+            model_name_or_path, labeler, cache_model_dir, device, best_metric
+        )
 
         self._metric = evaluate.load('seqeval')
         self._model = AutoModelForTokenClassification.from_pretrained(
@@ -166,7 +169,7 @@ class TokenClassifyModel(ModelContainer):
         return {
             'precision': results['overall_precision'],
             'recall': results['overall_recall'],
-            'f1': results['overall_f1'],
+            'f1': results[self._best_metric],
             'accuracy': results['overall_accuracy'],
         }
 
@@ -212,8 +215,10 @@ class TokenClassifyModel(ModelContainer):
 class SeqClassifyModel(ModelContainer):
 
     def __init__(self, model_name_or_path: str, labeler: Labeler,
-                 cache_model_dir: Union[str, None] = None, device: str = None):
-        super(SeqClassifyModel, self).__init__(model_name_or_path, labeler, cache_model_dir, device)
+                 cache_model_dir: Union[str, None] = None, device: str = None, best_metric: str = 'macro'):
+        super(SeqClassifyModel, self).__init__(
+            model_name_or_path, labeler, cache_model_dir, device, best_metric
+        )
         if isinstance(self._labeler, MultiLabeler):  # here we have integer encoded every label combination
             self._metric = MultilabelMetrics()
         else:
@@ -258,7 +263,7 @@ class SeqClassifyModel(ModelContainer):
         return {
             'precision': results['avg']['macro']['p'],
             'recall': results['avg']['macro']['r'],
-            'f1': results['avg']['macro']['f1'],
+            'f1': results['avg'][self._best_metric]['f1'],
             'accuracy': results['accuracy']
         }
 
