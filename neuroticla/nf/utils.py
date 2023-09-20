@@ -75,7 +75,7 @@ def compute_model_name(arg, text_fields: List[str], labels: List[str] = None, fo
         else:
             m = arg.model_name
     else:
-        m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}.{arg.corpora}{f_str}{l_str}'
+        m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}'
     return m
 
 

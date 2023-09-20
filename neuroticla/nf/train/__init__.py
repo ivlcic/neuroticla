@@ -38,6 +38,11 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         help='Pretrained model that should be used for fine tuning',
         choices=['mcbert', 'xlmrb', 'xlmrl']
     )
+    parser.add_argument(
+        '-m', '--metric', type=str, default='macro', required=False,
+        help='Metric to select for best model selection (used only for model name construction)',
+        choices=['micro-1', 'micro', 'micro-1', 'macro']
+    )
     parser.add_argument('corpora', type=str, default=None,
                         help='Corpora prefix or path prefix to use for training')
 
@@ -56,7 +61,7 @@ def _get_training_args(arg, result_path: str) -> TrainingArguments:
             optim='adamw_torch',
             # optim='adamw_hf',
             save_total_limit=1,
-            metric_for_best_model='f1',
+            metric_for_best_model=arg.metric,
             logging_strategy='epoch',
         )
 
