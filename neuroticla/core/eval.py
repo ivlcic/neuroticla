@@ -148,8 +148,8 @@ class MultilabelMetrics:
 
         if y_true.ndim == 1:
             # for single label we get  per label row vector
-            y_true = np.array([y_true])
-            y_pred = np.array([y_pred])
+            yt_t = np.array([y_true])
+            yt_p = np.array([y_pred])
         else:
             # we transform column-per-label (1-hot encoded matrix or label indicator array) to row-per-label vector
             yt_t = y_true.transpose()
