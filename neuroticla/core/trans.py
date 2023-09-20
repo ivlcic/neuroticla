@@ -161,7 +161,7 @@ class TokenClassifyModel(ModelContainer):
         )
         if test:
             return results
-        logger.info('Batch eval: %s', results)
+        logger.info('Using best metric %s from batch eval results: %s', self._best_metric, results)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
         if callback is not None:
@@ -256,7 +256,7 @@ class SeqClassifyModel(ModelContainer):
                 pass
             return results
 
-        logger.info('Batch eval: %s', results)
+        logger.info('Using best metric %s from batch eval results: %s', self._best_metric, results)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
 
