@@ -146,14 +146,14 @@ class MultilabelMetrics:
         y_true: np.ndarray = np.array(references)
         y_pred: np.ndarray = np.array(predictions)
 
-        # for single label we get  per label row vector
         if y_true.ndim == 1:
+            # for single label we get  per label row vector
             y_true = np.array([y_true])
             y_pred = np.array([y_pred])
-
-        # we transform column-per-label (1-hot encoded matrix or label indicator array) to row-per-label vector
-        yt_t = y_true.transpose()
-        yt_p = y_pred.transpose()
+        else:
+            # we transform column-per-label (1-hot encoded matrix or label indicator array) to row-per-label vector
+            yt_t = y_true.transpose()
+            yt_p = y_pred.transpose()
 
         # per label evaluation decomposition
         sum_prf1s_0 = np.array([0, 0, 0, 0], dtype='float64')
