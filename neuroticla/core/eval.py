@@ -146,7 +146,7 @@ class MultilabelMetrics:
         y_true: np.ndarray = np.array(references)
         y_pred: np.ndarray = np.array(predictions)
 
-        if y_true.ndim == 1:
+        if len(labels) == 1:
             # for single label we get  per label row vector
             yt_t = np.array([y_true])
             yt_p = np.array([y_pred])
@@ -154,80 +154,6 @@ class MultilabelMetrics:
             # we transform column-per-label (1-hot encoded matrix or label indicator array) to row-per-label vector
             yt_t = y_true.transpose()
             yt_p = y_pred.transpose()
-
-        # per label evaluation decomposition
-        sum_prf1s_0 = np.array([0, 0, 0, 0], dtype='float64')
-        sum_prf1s_1 = np.array([0, 0, 0, 0], dtype='float64')
-        sum_cm_0 = np.array([[0, 0], [0, 0]])
-        sum_cm_1 = np.array([[0, 0], [0, 0]])
-        for lx, lb in enumerate(labels):
-            report['labels'][lb + '-0'] = {}
-            report['labels'][lb + '-1'] = {}
-            # note the absence of an average parameter
-            p, r, f1, s = metrics.precision_recall_fscore_support(yt_t[lx], yt_p[lx], zero_division=0)
-            MultilabelMetrics._add_prfs(report['labels'][lb + '-0'], p[0], r[0], f1[0], s[0])
-            MultilabelMetrics._add_prfs(report['labels'][lb + '-1'], p[1], r[1], f1[1], s[1])
-            cm_1 = metrics.confusion_matrix(yt_t[lx], yt_p[lx])
-            # negative label CM is just pi rotation
-            cm_0 = np.rot90(np.rot90(cm_1))
-            MultilabelMetrics._add_tnfpfntp(report['labels'][lb + '-0'], *cm_0.ravel())
-            MultilabelMetrics._add_tnfpfntp(report['labels'][lb + '-1'], *cm_1.ravel())
-            sum_prf1s_0 += [p[0], r[0], f1[0], s[0]]
-            sum_prf1s_1 += [p[1], r[1], f1[1], s[1]]
-            sum_cm_0 += cm_0
-            sum_cm_1 += cm_1
-
-        l_len = len(labels)
-        l_2len = 2 * l_len
-
-        report['avg'] = {
-            'macro-0': {}, 'macro-1': {}, 'macro': {},
-            'micro-0': {}, 'micro-1': {}, 'micro': {}
-        }
-
-        # macro averaging
-        sum_prf1s = sum_prf1s_0 + sum_prf1s_1
-        MultilabelMetrics._add_prfs(
-            report['avg']['macro-0'], *np.divide(sum_prf1s_0, [l_len, l_len, l_len, 1]).ravel()
-        )
-        MultilabelMetrics._add_prfs(
-            report['avg']['macro-1'], *np.divide(sum_prf1s_1, [l_len, l_len, l_len, 1]).ravel()
-        )
-        MultilabelMetrics._add_prfs(
-            report['avg']['macro'], *np.divide(sum_prf1s, [l_2len, l_2len, l_2len, 1]).ravel()
-        )
-
-        # micro averaging
-        sum_cm = sum_cm_0 + sum_cm_1
-        MultilabelMetrics._add_prfs(
-            report['avg']['micro-0'], *MultilabelMetrics._compute_prf1(*sum_cm_0.ravel()), sum_prf1s_0[3]
-        )
-        MultilabelMetrics._add_tnfpfntp(report['avg']['micro-0'], *sum_cm_0.ravel())
-        MultilabelMetrics._add_prfs(
-            report['avg']['micro-1'], *MultilabelMetrics._compute_prf1(*sum_cm_1.ravel()), sum_prf1s_1[3]
-        )
-        MultilabelMetrics._add_tnfpfntp(report['avg']['micro-1'], *sum_cm_1.ravel())
-        MultilabelMetrics._add_prfs(
-            report['avg']['micro'], *MultilabelMetrics._compute_prf1(*sum_cm.ravel()), sum_prf1s[3]
-        )
-        MultilabelMetrics._add_tnfpfntp(report['avg']['micro'], *sum_cm.ravel())
-
-        report['accuracy'] = metrics.accuracy_score(y_true, y_pred)
-        report['hamming'] = metrics.hamming_loss(y_true, y_pred)
-        return report
-
-
-class BinaryMetrics(MultilabelMetrics):
-
-    def compute(self, references: Union[List[Any], np.ndarray], predictions: Union[List[Any], np.ndarray],
-                labels: List[str], output_dict: bool = True):
-        # init container dict
-        report = {'labels': {}, 'avg': {}}
-        y_true: np.ndarray = np.array(references)
-        y_pred: np.ndarray = np.array(predictions)
-        # we transform column-per-label (1-hot encoded matrix or label indicator array) to row-per-label vector
-        yt_t = y_true.transpose()
-        yt_p = y_pred.transpose()
 
         # per label evaluation decomposition
         sum_prf1s_0 = np.array([0, 0, 0, 0], dtype='float64')

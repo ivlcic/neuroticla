@@ -219,10 +219,7 @@ class SeqClassifyModel(ModelContainer):
         super(SeqClassifyModel, self).__init__(
             model_name_or_path, labeler, cache_model_dir, device, best_metric
         )
-        if isinstance(self._labeler, MultiLabeler):  # here we have integer encoded every label combination
-            self._metric = MultilabelMetrics()
-        else:
-            self._metric = MultilabelMetrics()  # ClassificationMetrics()
+        self._metric = MultilabelMetrics()
         self._model = AutoModelForSequenceClassification.from_pretrained(
             model_name_or_path, cache_dir=cache_model_dir, num_labels=labeler.mun_labels(),
             id2label=labeler.ids2labels(), label2id=labeler.labels2ids()
