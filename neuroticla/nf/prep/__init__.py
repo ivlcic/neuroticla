@@ -8,7 +8,7 @@ from ...core.args import CommonArguments
 from ...utils.zip import AESZipFile, ZIP_BZIP2, WZ_AES
 from .filter import DataFilter
 from .aussda import AussdaLongDataFilter, AussdaShortDataFilter, AussdaManualDataFilter
-from .slomcor import SlomcorDataFilter
+from .slomcor import SlomcorDataFilter, SlomcorManualDataFilter
 
 logger = logging.getLogger('nf.prep')
 
@@ -26,6 +26,8 @@ def get_data_filter(input_path: str, target_dir_path: str, base_name: str, num_r
         return AussdaShortDataFilter(input_path, target_dir_path, base_name, num_rows)
     elif 'reminderid_doc_id' in df:
         return AussdaManualDataFilter(input_path, target_dir_path, base_name, num_rows)
+    elif 'migration' in df:
+        return SlomcorManualDataFilter(input_path, target_dir_path, base_name, num_rows)
     else:
         return SlomcorDataFilter(input_path, target_dir_path, base_name, num_rows)
 

@@ -321,9 +321,15 @@ Epochs and pretrained model names are used just for model name computation.
 ./nf test lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -f title,body -m micro-1 -p mcbert aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -f title,body -m micro-1 -p xlmrb aussda_manual
+
+# do baseline
 ./nf test majority0 aussda_manual
 ./nf test majority_labeled aussda_manual
 ./nf test random aussda_manual
+
+# finnaly convert to cvs
+./nf convert_result test_set.results_all.json
+
 
 # the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_short.f-b aussda_short
 ./nf test binrel --tqdm -e 20 -b 24 -p mcbert aussda_short
@@ -338,7 +344,7 @@ Epochs and pretrained model names are used just for model name computation.
 ./nf test majority -u eco,lab,wel,sec aussda_short
 ./nf test random -u eco,lab,wel,sec aussda_short
 ```
-
+To test on a
 
 Todo 
 - convert test results json to tsv/csv

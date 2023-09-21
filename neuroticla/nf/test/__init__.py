@@ -57,6 +57,10 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         help='Metric to select for best model selection (used only for model name construction)',
         choices=['micro-1', 'micro', 'macro-1', 'macro']
     )
+    parser.add_argument(
+        '-x', '--eval_file', type=str, default='', required=False,
+        help='Evaluate model on file else on test split',
+    )
 
     parser.add_argument('corpora', type=str, default=None,
                         help='Corpora prefix or path prefix to use for training')
@@ -78,6 +82,7 @@ def test_majority0(arg) -> int:
 
     # load the data and tokenize it
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
+
     arg.model_name = f'majority-0.{arg.corpora}{get_labels_str(labels)}'
     result_path = compute_model_path(arg, 'baseline')
     logger.info('Started testing model [%s] for labels %s from path [%s].',
@@ -92,7 +97,11 @@ def test_majority0(arg) -> int:
         global_pred.append(y_pred)
         global_true.append(test_data[label].tolist())
 
-    test_data.drop(['body', 'lead'], axis=1, inplace=True)
+    drop = ['body']
+    if 'lead' in test_data:
+        drop.append('lead')
+    test_data.drop(drop, axis=1, inplace=True)
+
     test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
 
@@ -131,7 +140,11 @@ def test_majority_labeled(arg) -> int:
         global_pred.append(y_pred)
         global_true.append(test_data[label].tolist())
 
-    test_data.drop(['body', 'lead'], axis=1, inplace=True)
+    drop = ['body']
+    if 'lead' in test_data:
+        drop.append('lead')
+    test_data.drop(drop, axis=1, inplace=True)
+
     test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
 
@@ -211,7 +224,17 @@ def test_binrel(arg) -> int:
 
     computed_name = arg.model_name
 
-    train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
+    input_file = os.path.join(arg.data_in_dir, arg.eval_file)
+    if not os.path.exists(input_file):
+        input_file = arg.eval_file
+
+    if not os.path.exists(input_file):
+        base_name = ''
+        _, _, test_data = DataSplit.load(get_data_path_prefix(arg))
+    else:
+        base_name = os.path.splitext(os.path.basename(input_file))[0] + '.'
+        test_data = pd.read_csv(input_file, encoding='utf-8')
+
     global_true = []
     global_pred = []
     for label in labels:
@@ -234,7 +257,9 @@ def test_binrel(arg) -> int:
         result_writer = ResultWriter(
             arg.result_dir, os.path.dirname(result_path), None
         )
-        result_writer.write(results, 'binrel.' + arg.model_name + get_labels_str([label]), label)
+        result_writer.write(
+            results, base_name + 'binrel.' + arg.model_name + get_labels_str([label]), label
+        )
         test_data['p_' + label] = collector.y_pred
         global_true.append(collector.y_true)
         global_pred.append(collector.y_pred)
@@ -246,8 +271,14 @@ def test_binrel(arg) -> int:
     # write predictions
     arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
     result_path = os.path.join(compute_model_path(arg, 'binrel'))
-    test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(os.path.dirname(result_path), 'binrel.' + arg.model_name + l_str + '.cvs')
+
+    drop = ['body']
+    if 'lead' in test_data:
+        drop.append('lead')
+    test_data.drop(drop, axis=1, inplace=True)
+    test_pred_path = os.path.join(
+        os.path.dirname(result_path), base_name + 'binrel.' + arg.model_name + l_str + '.cvs'
+    )
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
 
     # compute combined results
@@ -257,7 +288,7 @@ def test_binrel(arg) -> int:
     global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
 
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
-    result_writer.write(global_results, 'binrel.' + arg.model_name + l_str)
+    result_writer.write(global_results, base_name + 'binrel.' + arg.model_name + l_str)
     return 0
 
 
@@ -269,8 +300,16 @@ def test_lpset(arg) -> int:
     text_fields = get_text_fields(arg)
     logger.info('Started testing for labels %s and text fields %s.', labels, text_fields)
 
-    # load the data and tokenize it
-    train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
+    input_file = os.path.join(arg.data_in_dir, arg.eval_file)
+    if not os.path.exists(input_file):
+        input_file = arg.eval_file
+
+    if not os.path.exists(input_file):
+        base_name = ''
+        _, _, test_data = DataSplit.load(get_data_path_prefix(arg))
+    else:
+        base_name = os.path.splitext(os.path.basename(input_file))[0] + '.'
+        test_data = pd.read_csv(input_file, encoding='utf-8')
 
     arg.model_name = compute_model_name(arg, text_fields, labels)
     result_path = compute_model_path(arg, 'lpset')
@@ -289,12 +328,15 @@ def test_lpset(arg) -> int:
         arg, mc, _get_training_args(arg, result_path), test_data, labels, text_fields, collector.collect
     )
     result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
-    result_writer.write(results, 'lpset.' + arg.model_name)
+    result_writer.write(results, base_name + 'lpset.' + arg.model_name)
 
     for lx, lbl in enumerate(labels):
         test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
 
-    test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(os.path.dirname(result_path), 'lpset.' + arg.model_name + '.cvs')
+    drop = ['body']
+    if 'lead' in test_data:
+        drop.append('lead')
+    test_data.drop(drop, axis=1, inplace=True)
+    test_pred_path = os.path.join(os.path.dirname(result_path), base_name + 'lpset.' + arg.model_name + '.cvs')
     test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
     return 0
