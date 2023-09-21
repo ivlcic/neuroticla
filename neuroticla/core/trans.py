@@ -122,6 +122,17 @@ class ModelContainer(torch.nn.Module):
         predictions, labels, _ = trainer.predict(test_set)
         return self.compute_metrics((predictions, labels), True, callback)
 
+    def infer_set(self, training_args: TrainingArguments, data_set: ClassifyDataset):
+        self._model.eval()
+        trainer = Trainer(
+            model=self._model,
+            args=training_args,
+            tokenizer=self._tokenizer,
+            compute_metrics=self.compute_metrics
+        )
+        predictions, labels, _ = trainer.predict(data_set)
+        return predictions
+
 
 class TokenClassifyModel(ModelContainer):
 

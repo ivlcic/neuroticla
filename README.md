@@ -272,22 +272,33 @@ By default, only a body field is used for the training, and subset of frame tags
 ./nf train binrel --tqdm -e 20 -b 24 -u eco -p mcbert aussda_manual
 ./nf train binrel --tqdm -e 20 -b 24 -u eco -p xlmrb aussda_manual
 
-./nf train binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual &>/root/train-binrel-macro-xlmrb.log
-./nf train binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>/root/train-binrel-macro-mcbert.log
+./nf train binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual &>train-binrel-macro-xlmrb.log
+./nf train binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>train-binrel-macro-mcbert.log
 
-./nf train lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual &>/root/train-lpset-macro-xlmrb.log
-./nf train lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>/root/train-lpset-macro-mcbert.log
+./nf train lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual &>train-lpset-macro-xlmrb.log
+./nf train lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>train-lpset-macro-mcbert.log
 ```
 For usage of an additional text fields you have to enumerate them:
 ```
-./nf train binrel --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/train-binrel-macro-tb-xlmrb.log
-./nf train binrel --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/train-binrel-macro-tb-mcbert.log
+./nf train binrel --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>train-binrel-macro-tb-xlmrb.log
+./nf train binrel --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>train-binrel-macro-tb-mcbert.log
 
-./nf train lpset --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/train-lpset-macro-tb-xlmrb.log
-./nf train lpset --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/train-lpset-macro-tb-mcbert.log
+./nf train lpset --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>train-lpset-macro-tb-xlmrb.log
+./nf train lpset --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>train-lpset-macro-tb-mcbert.log
 ```
 
 For usage of different average metric for best model selection you have to specify it:
+```
+./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual &>train-lpset-micro1-xlmrb.log
+./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual &>train-lpset-micro1-mcbert.log
+./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p xlmrb -f title,body aussda_manual &>train-lpset-micro1-tb-xlmrb.log
+./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p mcbert -f title,body aussda_manual &>train-lpset-micro1-tb-mcbert.log
+
+./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual &>train-binrel-micro1-xlmrb.log
+./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual &>train-binrel-micro1-mcbert.log
+./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p xlmrb -f title,body aussda_manual &>train-binrel-micro1-tb-xlmrb.log
+./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p mcbert -f title,body aussda_manual &>train-binrel-micro1-tb-mcbert.log
+```
 
 ### Test
 Epochs and pretrained model names are used just for model name computation.
@@ -296,13 +307,22 @@ Epochs and pretrained model names are used just for model name computation.
 # so it is shorter to construct model name from training params 
 ./nf test binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual
 ./nf test binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual
 ./nf test binrel --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
 ./nf test binrel --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -f title,body -m micro-1 -p mcbert aussda_manual
+./nf test binrel --tqdm -e 20 -b 24 -f title,body -m micro-1 -p xlmrb aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
 ./nf test lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
-./nf test majority aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -f title,body -m micro-1 -p mcbert aussda_manual
+./nf test lpset --tqdm -e 20 -b 24 -f title,body -m micro-1 -p xlmrb aussda_manual
+./nf test majority0 aussda_manual
+./nf test majority_labeled aussda_manual
 ./nf test random aussda_manual
 
 # the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_short.f-b aussda_short
@@ -310,8 +330,6 @@ Epochs and pretrained model names are used just for model name computation.
 ./nf test binrel --tqdm -e 20 -b 24 -p xlmrb aussda_short
 ./nf test lpset --tqdm -e 20 -b 24 -p mcbert aussda_short
 ./nf test lpset --tqdm -e 20 -b 24 -p xlmrb aussda_short
-./nf test majority aussda_short
-./nf test random aussda_short
 
 ./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_short
 ./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
@@ -319,10 +337,6 @@ Epochs and pretrained model names are used just for model name computation.
 ./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
 ./nf test majority -u eco,lab,wel,sec aussda_short
 ./nf test random -u eco,lab,wel,sec aussda_short
-```
-Simirarly model names are used just for model name computation.
-```
-
 ```
 
 

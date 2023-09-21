@@ -55,7 +55,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
     parser.add_argument(
         '-m', '--metric', type=str, default='macro', required=False,
         help='Metric to select for best model selection (used only for model name construction)',
-        choices=['micro-1', 'micro', 'micro-1', 'macro']
+        choices=['micro-1', 'micro', 'macro-1', 'macro']
     )
 
     parser.add_argument('corpora', type=str, default=None,
@@ -124,9 +124,9 @@ def test_majority_labeled(arg) -> int:
     global_pred = []
     for label in labels:
         if label == 'sec':
-            y_pred = [1] * test_data.shape[0]  # all zeros is a majority class / label combination
+            y_pred = [1] * test_data.shape[0]  # security is a majority class / label
         else:
-            y_pred = [0] * test_data.shape[0]  # all zeros is a majority class / label combination
+            y_pred = [0] * test_data.shape[0]  # all other are zeros
         test_data['p_' + label] = y_pred
         global_pred.append(y_pred)
         global_true.append(test_data[label].tolist())
@@ -146,61 +146,7 @@ def test_majority_labeled(arg) -> int:
     return 0
 
 
-def test_random0(arg) -> int:
-    labels = get_labels(arg)
-    if not labels:
-        return 1
-
-    # load the data and tokenize it
-    train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
-    arg.model_name = f'random-0.{arg.corpora}{get_labels_str(labels)}'
-    result_path = compute_model_path(arg, 'baseline')
-    logger.info('Started testing model [%s] for labels %s from path [%s].',
-                arg.model_name, labels, result_path)
-
-    # create random test set
-    data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
-    # Create a new column to store the label combinations
-    data['comb'] = data[labels].apply(lambda row: ''.join(row.astype(str)), axis=1)
-    # Calculate frequencies for each string combination
-    combination_freq = data['comb'].value_counts().reset_index()
-    combination_freq.columns = ['comb', 'freq']
-
-    combos = pd.DataFrame({
-        'comb': random.choices(
-                    combination_freq['comb'].values.tolist(),
-                    combination_freq['freq'].values.tolist(),
-                    k=test_data.shape[0]
-                )
-    })
-    split_combos = combos['comb'].apply(lambda x: pd.Series([int(i) for i in list(x)]))
-    split_combos.columns = labels
-
-    logger.info('Testing labels: %s with device [%s]', labels, arg.device)
-    global_true = []
-    global_pred = []
-    for label in labels:
-        y_pred = split_combos[label].values.tolist()
-        test_data['p_' + label] = y_pred
-        global_pred.append(y_pred)
-        global_true.append(test_data[label].tolist())
-
-    test_data.drop(['body', 'lead'], axis=1, inplace=True)
-    test_pred_path = os.path.join(os.path.dirname(result_path), arg.model_name + '.cvs')
-    test_data.to_csv(test_pred_path, encoding='utf-8', index=False)
-
-    # write label indicator arrays
-    global_true: List[Any] = np.array(global_true).transpose().tolist()
-    global_pred: List[Any] = np.array(global_pred).transpose().tolist()
-    metrics = MultilabelMetrics()
-    global_results = metrics.compute(references=global_true, predictions=global_pred, labels=labels)
-
-    result_writer = ResultWriter(arg.result_dir, os.path.dirname(result_path))
-    result_writer.write(global_results, 'baseline-' + arg.model_name)
-    return 0
-
-
-def test_random_labeled(arg) -> int:
+def test_random(arg) -> int:
     labels = get_labels(arg)
     if not labels:
         return 1
@@ -227,8 +173,6 @@ def test_random_labeled(arg) -> int:
                     k=test_data.shape[0]
                 )
     })
-    combos = combos[combos['comb'] != '0000']
-
     split_combos = combos['comb'].apply(lambda x: pd.Series([int(i) for i in list(x)]))
     split_combos.columns = labels
 

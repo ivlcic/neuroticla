@@ -7,6 +7,6 @@ data/ner/split/
 result/ner/
 
 data/nf/**/*.csv
-result/nf/
+result/nf*/
 
 __pycache__

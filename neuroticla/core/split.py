@@ -74,13 +74,13 @@ class DataSplit:
             else:
                 delim = '.'
             training_sets.append(
-                pd.read_csv(path_prefix + delim + 'train.csv')
+                pd.read_csv(path_prefix + delim + 'train.csv', encoding='utf-8')
             )
             evaluation_sets.append(
-                pd.read_csv(path_prefix + delim + 'eval.csv')
+                pd.read_csv(path_prefix + delim + 'eval.csv', encoding='utf-8')
             )
             test_sets.append(
-                pd.read_csv(path_prefix + delim + 'test.csv')
+                pd.read_csv(path_prefix + delim + 'test.csv', encoding='utf-8')
             )
             logger.info("Loaded corpus [%s]", path_prefix)
 
