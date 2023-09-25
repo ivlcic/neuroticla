@@ -1,7 +1,8 @@
+import json
 import logging
 import os
 from argparse import ArgumentParser
-from typing import List, Union
+from typing import List, Union, Dict
 
 from ..core.args import CommonArguments
 
@@ -31,8 +32,7 @@ def get_labels(arg) -> List[str]:
         if all(item in labels for item in subset):
             labels = subset
         else:
-            logger.error('Invalid labels subset: %s', arg.subset)
-            return []
+            raise ValueError(f'Invalid labels subset: [{arg.subset}]')
     return labels
 
 
@@ -40,16 +40,25 @@ def get_all_text_fields() -> List[str]:
     return ['title', 'body']
 
 
-def get_text_fields(arg) -> List[str]:
+def get_text_fields(arg, input_fields: str) -> List[str]:
     text_fields = get_all_text_fields()
-    if arg.fields is not None:
-        fields = arg.fields.split(',')
+    if input_fields is not None:
+        fields = input_fields.split(',')
         if all(item in text_fields for item in fields):
             text_fields = fields
         else:
-            logger.error('Invalid text fields: %s', arg.fields)
-            return []
+            raise ValueError(f'Invalid text fields: [{arg.train_fields}]')
     return text_fields
+
+
+def get_train_fields(arg) -> List[str]:
+    return get_text_fields(arg, arg.train_fields)
+
+
+def get_test_fields(arg) -> List[str]:
+    if arg.test_fields is None:
+        return get_text_fields(arg, arg.train_fields)
+    return get_text_fields(arg, arg.test_fields)
 
 
 def get_data_path_prefix(arg) -> List[str]:
@@ -64,11 +73,11 @@ def get_labels_str(labels: List[str]) -> str:
     return l_str
 
 
-def compute_model_name(arg, text_fields: List[str], labels: List[str] = None, force_label: bool = False) -> str:
+def compute_model_name_old(arg, train_fields: List[str], labels: List[str] = None, force_label: bool = False) -> str:
     l_str = get_labels_str(labels)
     f_str = ''
-    if text_fields is not None:
-        f_str = '.f-' + '_'.join([text_field[0] for text_field in text_fields if text_field])
+    if train_fields is not None:
+        f_str = '.f-' + '_'.join([text_field[0] for text_field in train_fields if text_field])
     if arg.model_name is not None:
         if force_label:
             m = f'{arg.model_name}{l_str}'
@@ -77,6 +86,52 @@ def compute_model_name(arg, text_fields: List[str], labels: List[str] = None, fo
     else:
         m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}'
     return m
+
+
+def compute_model_name(arg, pt_method: str) -> str:
+    if arg.model_name is not None:
+        return arg.model_name
+    l_str = get_labels_str(get_labels(arg))
+    f_str = ''
+    train_fields = get_train_fields(arg)
+    if train_fields is not None:
+        f_str = '.f-' + '_'.join([text_field[0] for text_field in train_fields if text_field])
+    m = f'{pt_method}.{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}'
+    return m
+
+
+def write_model_params(out_dir: str, arg, pt_method: str) -> Dict[str, str]:
+    params = {}
+    params['pt_method'] = pt_method
+    params['name'] = compute_model_name(arg, pt_method)
+    params['labels'] = ','.join(get_labels(arg))
+    params['train_fields'] = ','.join(get_train_fields(arg))
+    params['pretrained_model'] = arg.pretrained_model
+    params['epochs'] = arg.epochs
+    params['batch'] = arg.batch
+    params['learn_rate'] = arg.learn_rate
+    params['metric'] = arg.metric
+    params['corpora'] = arg.corpora
+    params['max_seq_len'] = arg.max_seq_len
+    with open(os.path.join(out_dir, 'train_params.json'), 'wt') as fp:
+        json.dump(params, fp, indent=2)
+    return params
+
+
+def read_model_params(out_dir: str, arg) -> Dict[str, str]:
+    with open(os.path.join(out_dir, 'train_params.json'), 'r') as json_file:
+        params = json.load(json_file)
+
+    arg.labels = params['labels']
+    arg.train_fields = params['train_fields']
+    arg.pretrained_model = params['pretrained_model']
+    arg.epochs = params['epochs']
+    arg.batch = params['batch']
+    arg.learn_rate = params['learn_rate']
+    arg.metric = params['metric']
+    arg.corpora = params['corpora']
+    arg.max_seq_len = params['max_seq_len']
+    return params
 
 
 def compute_model_path(arg, subdir: str) -> str:

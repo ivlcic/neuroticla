@@ -1,0 +1,247 @@
+import os.path
+import socket
+import pandas as pd
+
+from typing import Any, Tuple
+from transformers import TrainingArguments
+from sklearn.model_selection import KFold
+
+from ..core.results import ResultsCollector
+from ..core.dataset import SeqClassifyDataset
+from ..core.labels import Labeler, BinaryLabeler, MultiLabeler
+from ..core.results import ResultWriter
+from ..core.split import DataSplit
+from ..core.trans import SeqClassifyModel, ModelContainer
+from ..core.eval import MultilabelMetrics
+from ..nf.utils import *
+
+logger = logging.getLogger('nf.train')
+
+
+def add_args(module_name: str, parser: ArgumentParser) -> None:
+    CommonArguments.train(parser)
+    CommonArguments.split_data_dir(module_name, parser, ('-i', '--data_in_dir'))
+    CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
+    CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
+    parser.add_argument(
+        '--max_seq_len', help='Max sub-word tokens length.', type=int, default=512
+    )
+    parser.add_argument(
+        '--tqdm', help='Enable TDQM.', action='store_true', default=False
+    )
+    parser.add_argument(
+        '-n', '--model_name', help='Target model name.', type=str, default=None
+    )
+    parser.add_argument(
+        '-k', '--k_fold', help='Do K-fold cross-validation.', type=int, default=0
+    )
+    labels = ','.join(get_all_labels())
+    parser.add_argument(
+        '-u', '--subset', type=str, default=None,
+        help='Subset of the labels to use for training (comma separated: ' + labels + ')',
+    )
+    text_fields = ','.join(get_all_text_fields())
+    parser.add_argument(
+        '-f', '--train_fields', type=str, default='body', required=False,
+        help='Text fields to use for training: ' + text_fields + ')',
+    )
+    parser.add_argument(
+        '-p', '--pretrained_model', type=str, default=None, required=False,
+        help='Pretrained model that should be used for fine tuning',
+        choices=['mcbert', 'xlmrb', 'xlmrl']
+    )
+    parser.add_argument(
+        '-m', '--metric', type=str, default='micro-1', required=False,
+        help='Metric to select for best model selection (used only for model name construction)',
+        choices=['micro-1', 'micro', 'macro-1', 'macro']
+    )
+    parser.add_argument('corpora', type=str, default=None,
+                        help='Corpora prefix or path prefix to use for training')
+
+
+def _get_training_args(arg, result_path: str) -> TrainingArguments:
+    return TrainingArguments(
+            output_dir=result_path,
+            num_train_epochs=arg.epochs,
+            per_device_train_batch_size=arg.batch,
+            per_device_eval_batch_size=arg.batch,
+            evaluation_strategy='epoch',
+            disable_tqdm=not arg.tqdm,
+            load_best_model_at_end=True,
+            save_strategy='epoch',
+            learning_rate=arg.learn_rate,
+            optim='adamw_torch',
+            # optim='adamw_hf',
+            save_total_limit=1,
+            metric_for_best_model='f1',
+            logging_strategy='epoch',
+        )
+
+
+def _train(arg, labeler: Labeler, result_path, train_data, eval_data) -> Tuple[ModelContainer, Dict[str, Any]]:
+    text_fields = get_train_fields(arg)
+    labels = labeler.source_labels()
+    logger.info('Training for label(s): [%s] with device [%s]', labels, arg.device)
+    mc = SeqClassifyModel(
+        ModelContainer.model_name_map[arg.pretrained_model],
+        labeler=labeler,
+        cache_model_dir=os.path.join(arg.tmp_dir, arg.pretrained_model),
+        device=arg.device,
+        best_metric=arg.metric
+    )
+    logger.debug('Constructing train data set [%s]...', len(train_data))
+    train_set = SeqClassifyDataset(
+        mc.labeler(), mc.tokenizer(), train_data, arg.max_seq_len, labels, text_fields
+    )
+    logger.info('Constructed train data set [%s].', len(train_data))
+    logger.debug('Constructing evaluation data set [%s]...', len(eval_data))
+    eval_set = SeqClassifyDataset(
+        mc.labeler(), mc.tokenizer(), eval_data, arg.max_seq_len, labels, text_fields
+    )
+    logger.info('Constructed evaluation data set [%s].', len(eval_data))
+
+    training_args = _get_training_args(arg, result_path)
+    # train the model
+    results = mc.build(training_args, train_set, eval_set)
+    return mc, results
+
+
+def _test(arg, mc: ModelContainer, result_path, collector, test_data) -> Dict[str, Any]:
+    text_fields = get_train_fields(arg)
+    labels = mc.labeler().source_labels()
+    # run tests
+    logger.debug('Constructing test data set [%s]...', len(test_data))
+    test_set = SeqClassifyDataset(
+        mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, labels, text_fields
+    )
+    logger.info('Constructed test data set [%s].', len(test_data))
+    results = mc.test(_get_training_args(arg, result_path), test_set, collector.collect)
+    logger.info('Test set evaluation results: [%s].', results)
+
+    if isinstance(labels, str) or len(labels) == 1:
+        lbl = labels if isinstance(labels, str) else labels
+        test_data['p_' + lbl] = collector.y_pred
+    else:
+        for lx, lbl in enumerate(labels):
+            test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
+
+    return results
+
+
+def _train_binrel(arg, train_data, eval_data, test_data) -> Dict[str, Any]:
+    arg.model_name = compute_model_name(arg, 'binrel')
+    result_path = os.path.join(compute_model_path(arg, 'binrel'))
+    params = write_model_params(result_path, arg, 'binrel')
+    logger.info('Started training for params %s on path [%s].', params, result_path)
+
+    labels = get_labels(arg)
+    collector = ResultsCollector()
+    for label in labels:
+        sub_result_path = os.path.join(compute_model_path(arg, 'binrel'), label)
+        logger.info('Started training model [%s] for label [%s] to path [%s].',
+                    arg.model_name, label, sub_result_path)
+        mc, _ = _train(
+            arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data
+        )
+        _test(
+            arg, mc, sub_result_path, collector, test_data
+        )
+        ModelContainer.remove_checkpoint_dir(result_path)
+
+    result_writer = ResultWriter()
+    result_writer.write_predictions(result_path, 'predictions', test_data, ['body', 'lead'])
+
+    metrics = MultilabelMetrics()
+    results = metrics.compute(
+        references=collector.get_all_true(), predictions=collector.get_all_pred(), labels=labels
+    )
+
+    result_writer.write_metrics(result_path, 'metrics', arg.model_name, results, True)
+    return results
+
+
+def train_binrel(arg) -> int:
+    logger.info('Starting binary relevance training ...')
+    train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
+    result = _train_binrel(arg, train_data, eval_data, test_data)
+    result_writer = ResultWriter()
+    result_writer.write_metrics(arg.result_dir, 'results_' + socket.gethostname(), arg.model_name, result)
+    logger.info('Finished binary relevance training.')
+    return 0
+
+
+def train_lpset(arg) -> int:
+    logger.info("Starting label power-set training ...")
+
+    arg.model_name = compute_model_name(arg, 'lpset')
+    result_path = os.path.join(compute_model_path(arg, 'lpset'))
+    params = write_model_params(result_path, arg, 'lpset')
+    labels = get_labels(arg)
+    logger.info(
+        'Starting training model [%s] with device [%s] for labels [%s] for params %s with result path [%s]...',
+        arg.model_name, arg.device, labels, params, result_path
+    )
+
+    train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
+    if arg.k_fold == 0:
+        collector = ResultsCollector()
+        mc, results = _train(
+            arg, MultiLabeler(labels=labels), result_path, train_data, eval_data
+        )
+        result = _test(
+            arg, mc, result_path, collector, test_data
+        )
+        ModelContainer.remove_checkpoint_dir(result_path)
+
+        result_writer = ResultWriter()
+        result_writer.write_predictions(result_path, 'predictions', test_data, ['body', 'lead'])
+        result_writer.write_metrics(result_path, 'metrics', 'kt.' + arg.model_name, result, True)
+        result_writer.write_metrics(arg.result_dir, 'metrics_' + socket.gethostname(), 'kt.' + arg.model_name, result)
+    else:
+        data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
+        kfold = KFold(n_splits=arg.k_fold)
+        prev_result = None
+        for fold, (train_index, eval_index) in enumerate(kfold.split(data)):
+            train_df = data.iloc[train_index]
+            eval_df = data.iloc[eval_index]
+            logger.info(
+                'Training model [%s] fold [%s] with train size [%s] and validation size [%s]...',
+                arg.model_name, fold, train_df.shape[0], eval_df.shape[0]
+            )
+            mc, result = _train(
+                arg, MultiLabeler(labels=labels), result_path, train_df, eval_df
+            )
+            if prev_result is None:
+                prev_result = result
+                ModelContainer.remove_checkpoint_dir(result_path)
+            elif prev_result['avg'][arg.metric]['f1'] < result['avg'][arg.metric]['f1']:
+                logger.info(
+                    'Training model [%s] fold [%s] metric [%s] value [%s] is better than previous [%s].',
+                    arg.model_name, fold, arg.metric,
+                    result['avg'][arg.metric]['f1'],
+                    prev_result['avg'][arg.metric]['f1']
+                )
+                prev_result = result
+                ModelContainer.remove_checkpoint_dir(result_path)
+            else:
+                logger.info(
+                    'Training model [%s] fold [%s] metric [%s] value [%s] is worse than previous [%s].',
+                    arg.model_name, fold, arg.metric,
+                    result['avg'][arg.metric]['f1'],
+                    prev_result['avg'][arg.metric]['f1']
+                )
+            mc.destroy()
+
+            result_writer = ResultWriter()
+            result_writer.write_predictions(
+                result_path, f'k{fold}.predictions', test_data, ['body', 'lead']
+            )
+            result_writer.write_metrics(
+                result_path, 'metrics', f'k{fold}.' + arg.model_name, result, True
+            )
+            result_writer.write_metrics(
+                arg.result_dir, 'metrics_' + socket.gethostname(), f'k{fold}.' + arg.model_name, result
+            )
+
+    logger.info('Finished label power-set training.')
+    return 0

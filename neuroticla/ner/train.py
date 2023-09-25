@@ -92,8 +92,8 @@ def main(arg) -> int:
     logger.info("%s", results)
 
     # write results
-    rw: ResultWriter = ResultWriter(result_path)
-    rw.write(results, arg.model_name)
+    rw: ResultWriter = ResultWriter()
+    rw.write_metrics(result_path, arg.model_name, arg.model_name, results, True)
 
     ModelContainer.remove_checkpoint_dir(result_path)
     return 0

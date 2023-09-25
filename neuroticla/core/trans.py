@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import evaluate
 
-from typing import List, Dict, Union, Callable
+from typing import List, Dict, Union, Callable, Any
 
 from torch.nn.modules.module import T
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForTokenClassification, \
@@ -64,6 +64,7 @@ class ModelContainer(torch.nn.Module):
             device = torch.device('cuda' if use_cuda else 'cpu')
             logger.info('Device was not set will use [%s].', device)
         self._device = device
+        self._last_eval_metrics: Dict[str, Any] = {}
 
     def model(self):
         return self._model
@@ -86,8 +87,16 @@ class ModelContainer(torch.nn.Module):
     def device(self):
         return self._device
 
-    def compute_metrics(self, p, test: bool = False, callback: Callable = None):
+    def destroy(self):
+        del self._model
+        del self._tokenizer
+        torch.cuda.empty_cache()
+
+    def compute_metrics(self, p, callback: Callable = None):
         pass
+
+    def last_eval_metrics(self):
+        return self._last_eval_metrics
 
     def forward(self, input_id, mask, label):
         output = self._model(input_ids=input_id, attention_mask=mask, labels=label, return_dict=False)
@@ -110,6 +119,7 @@ class ModelContainer(torch.nn.Module):
         logger.debug('Starting evaluation...')
         trainer.evaluate()
         logger.info('Evaluation done.')
+        return self._last_eval_metrics
 
     def test(self, training_args: TrainingArguments, test_set: ClassifyDataset, callback: Callable = None):
         self._model.eval()
@@ -120,7 +130,8 @@ class ModelContainer(torch.nn.Module):
             compute_metrics=self.compute_metrics
         )
         predictions, labels, _ = trainer.predict(test_set)
-        return self.compute_metrics((predictions, labels), True, callback)
+        self.compute_metrics((predictions, labels), callback)
+        return self._last_eval_metrics
 
     def infer_set(self, training_args: TrainingArguments, data_set: ClassifyDataset):
         self._model.eval()
@@ -149,7 +160,7 @@ class TokenClassifyModel(ModelContainer):
         )
         self._model.to(self._device)
 
-    def compute_metrics(self, p, test: bool = False, callback: Callable = None):
+    def compute_metrics(self, p, callback: Callable = None):
         logits, labels_list = p
 
         # select predicted index with maximum logit for each token
@@ -167,21 +178,19 @@ class TokenClassifyModel(ModelContainer):
             tagged_predictions_list.append(tagged_predictions)
             tagged_labels_list.append(tagged_labels)
 
-        results = self._metric.compute(
+        self._last_eval_metrics = self._metric.compute(
              references=tagged_labels_list, predictions=tagged_predictions_list, scheme='IOB2', mode='strict'
         )
-        if test:
-            return results
-        logger.info('Using best metric %s from batch eval results: %s', self._best_metric, results)
+        logger.info('Using best metric %s from batch eval results: %s', self._best_metric, self._last_eval_metrics)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
         if callback is not None:
             callback(self._labeler, tagged_labels_list, tagged_predictions_list)
         return {
-            'precision': results['overall_precision'],
-            'recall': results['overall_recall'],
-            'f1': results[self._best_metric],
-            'accuracy': results['overall_accuracy'],
+            'precision': self._last_eval_metrics['overall_precision'],
+            'recall': self._last_eval_metrics['overall_recall'],
+            'f1': self._last_eval_metrics[self._best_metric],
+            'accuracy': self._last_eval_metrics['overall_accuracy'],
         }
 
     def infer(self, word_list: Union[str, List[str]]) -> List[Dict[str, str]]:
@@ -237,7 +246,7 @@ class SeqClassifyModel(ModelContainer):
         )
         self._model.to(self._device)
 
-    def compute_metrics(self, p, test: bool = False, callback: Callable = None):
+    def compute_metrics(self, p, callback: Callable = None):
         logits, y_true = p
 
         # select predicted index with maximum logit for each token
@@ -256,23 +265,19 @@ class SeqClassifyModel(ModelContainer):
         if isinstance(self._labeler, BinaryLabeler):
             labels = self._labeler.source_labels()
 
-        results = self._metric.compute(references=y_true, predictions=y_pred, labels=labels)
+        self._last_eval_metrics = self._metric.compute(references=y_true, predictions=y_pred, labels=labels)
         if callback is not None:
             callback(self._labeler, y_true, y_pred)
-        if test:
-            if isinstance(self._labeler, MultiLabeler):
-                pass
-            return results
 
-        logger.info('Using best metric %s from batch eval results: %s', self._best_metric, results)
+        logger.info('Using best metric [%s] from batch eval results: [%s]', self._best_metric, self._last_eval_metrics)
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
 
         return {
-            'precision': results['avg']['macro']['p'],
-            'recall': results['avg']['macro']['r'],
-            'f1': results['avg'][self._best_metric]['f1'],
-            'accuracy': results['accuracy']
+            'precision': self._last_eval_metrics['avg'][self._best_metric]['p'],
+            'recall': self._last_eval_metrics['avg'][self._best_metric]['r'],
+            'f1': self._last_eval_metrics['avg'][self._best_metric]['f1'],
+            'accuracy': self._last_eval_metrics['accuracy']
         }
 
     def infer(self, word_list: Union[str, List[str]]) -> str:

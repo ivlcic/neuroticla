@@ -1,31 +1,12 @@
 import pandas as pd
-import numpy as np
-
-from typing import Any
-
 from transformers import TrainingArguments
 
 from .common import run_inference
-from ...core.labels import BinaryLabeler, MultiLabeler, Labeler
-from ...core.results import ResultWriter
+from ...core.labels import BinaryLabeler
 from ...core.trans import SeqClassifyModel
-from ...core.eval import MultilabelMetrics
 from ...nf.utils import *
 
 logger = logging.getLogger('nf.infer')
-
-
-class ResultsCollector:
-
-    def __init__(self):
-        self.labeler = None
-        self.y_pred = None
-        self.y_true = None
-
-    def collect(self, labeler: Labeler, y_true, y_pred):
-        self.y_true = y_true
-        self.y_pred = y_pred
-        self.labeler = labeler
 
 
 def add_args(module_name: str, parser: ArgumentParser) -> None:
@@ -50,7 +31,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
     )
     text_fields = ','.join(get_all_text_fields())
     parser.add_argument(
-        '-f', '--fields', type=str, default='body', required=False,
+        '-f', '--train_fields', type=str, default='body', required=False,
         help='Text fields to use for testing: ' + text_fields + ')',
     )
     parser.add_argument(
@@ -85,7 +66,7 @@ def infer_binrel(arg) -> int:
         return 1
 
     l_str = get_labels_str(labels)
-    text_fields = get_text_fields(arg)
+    text_fields = get_train_fields(arg)
     logger.info('Started inference for labels %s and text fields %s.', labels, text_fields)
 
     computed_name = arg.model_name
