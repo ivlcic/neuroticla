@@ -1,5 +1,6 @@
 import os.path
 import socket
+import shutil
 import pandas as pd
 
 from typing import Any, Tuple
@@ -77,6 +78,21 @@ def _get_training_args(arg, result_path: str) -> TrainingArguments:
             logging_strategy='epoch',
         )
 
+def _replace_binrel_models_tmp_dirs(arg, labels):
+    for label in labels:
+        path1 = os.path.join(compute_model_path(arg, 'binrel'), label + '-tmp')
+        path2 = os.path.join(compute_model_path(arg, 'binrel'), label)
+        if os.path.exists(path2):
+            shutil.rmtree(path2)
+        shutil.move(path1, path2)
+
+
+def _remove_binrel_models_tmp_dirs(arg, labels):
+    for label in labels:
+        path1 = os.path.join(compute_model_path(arg, 'binrel'), label + '-tmp')
+        if os.path.exists(path1):
+            shutil.rmtree(path1)
+
 
 def _train(arg, labeler: Labeler, result_path, train_data, eval_data) -> Tuple[ModelContainer, Dict[str, Any]]:
     text_fields = get_train_fields(arg)
@@ -128,44 +144,100 @@ def _test(arg, mc: ModelContainer, result_path, collector, test_data) -> Dict[st
     return results
 
 
-def _train_binrel(arg, train_data, eval_data, test_data) -> Dict[str, Any]:
+def train_binrel(arg) -> int:
+    logger.info('Starting binary relevance training ...')
     arg.model_name = compute_model_name(arg, 'binrel')
     result_path = os.path.join(compute_model_path(arg, 'binrel'))
     params = write_model_params(result_path, arg, 'binrel')
-    logger.info('Started training for params %s on path [%s].', params, result_path)
-
     labels = get_labels(arg)
-    collector = ResultsCollector()
-    for label in labels:
-        sub_result_path = os.path.join(compute_model_path(arg, 'binrel'), label)
-        logger.info('Started training model [%s] for label [%s] to path [%s].',
-                    arg.model_name, label, sub_result_path)
-        mc, _ = _train(
-            arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data
-        )
-        _test(
-            arg, mc, sub_result_path, collector, test_data
-        )
-        ModelContainer.remove_checkpoint_dir(result_path)
-
-    result_writer = ResultWriter()
-    result_writer.write_predictions(result_path, 'predictions', test_data, ['body', 'lead'])
-
-    metrics = MultilabelMetrics()
-    results = metrics.compute(
-        references=collector.get_all_true(), predictions=collector.get_all_pred(), labels=labels
+    logger.info(
+        'Starting training model [%s] with device [%s] for labels [%s] for params %s with result path [%s]...',
+        arg.model_name, arg.device, labels, params, result_path
     )
 
-    result_writer.write_metrics(result_path, 'metrics', arg.model_name, results, True)
-    return results
-
-
-def train_binrel(arg) -> int:
-    logger.info('Starting binary relevance training ...')
     train_data, eval_data, test_data = DataSplit.load(get_data_path_prefix(arg))
-    result = _train_binrel(arg, train_data, eval_data, test_data)
-    result_writer = ResultWriter()
-    result_writer.write_metrics(arg.result_dir, 'results_' + socket.gethostname(), arg.model_name, result)
+    if arg.k_fold == 0:
+        collector = ResultsCollector()
+        for label in labels:
+            sub_result_path = os.path.join(compute_model_path(arg, 'binrel'), label)
+            logger.info('Started training model [%s] for label [%s] to path [%s].',
+                        arg.model_name, label, sub_result_path)
+            mc, _ = _train(
+                arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data
+            )
+            _test(
+                arg, mc, sub_result_path, collector, test_data
+            )
+            ModelContainer.remove_checkpoint_dir(sub_result_path)
+            mc.destroy()
+
+        metrics = MultilabelMetrics()
+        result = metrics.compute(
+            references=collector.get_all_true(), predictions=collector.get_all_pred(), labels=labels
+        )
+
+        result_writer = ResultWriter()
+        result_writer.write_predictions(result_path, 'predictions', test_data, ['body', 'lead'])
+        result_writer.write_metrics(result_path, 'metrics', 'kt.' + arg.model_name, result, True)
+        result_writer.write_metrics(arg.result_dir, 'results_' + socket.gethostname(), 'kt.' + arg.model_name, result)
+    else:
+        data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
+        kfold = KFold(n_splits=arg.k_fold)
+        best_result = None
+        for fold, (train_index, eval_index) in enumerate(kfold.split(data)):
+            train_df = data.iloc[train_index]
+            eval_df = data.iloc[eval_index]
+            logger.info(
+                'Training model [%s] fold [%s] with train size [%s] and validation size [%s]...',
+                arg.model_name, fold, train_df.shape[0], eval_df.shape[0]
+            )
+            collector = ResultsCollector()
+            for label in labels:
+                sub_result_path = os.path.join(compute_model_path(arg, 'binrel'), label + '-tmp')
+                logger.info('Started training model [%s] for label [%s] to path [%s].',
+                            arg.model_name, label, sub_result_path)
+                mc, _ = _train(
+                    arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data
+                )
+                ModelContainer.remove_checkpoint_dir(sub_result_path)
+                mc.destroy()
+
+            metrics = MultilabelMetrics()
+            result = metrics.compute(
+                references=collector.get_all_true(), predictions=collector.get_all_pred(), labels=labels
+            )
+            if best_result is None:
+                best_result = result
+                _replace_binrel_models_tmp_dirs(arg, labels)
+            elif best_result['avg'][arg.metric]['f1'] < result['avg'][arg.metric]['f1']:
+                logger.info(
+                    'Training model [%s] fold [%s] metric [%s] value [%s] is better than previous [%s].',
+                    arg.model_name, fold, arg.metric,
+                    result['avg'][arg.metric]['f1'],
+                    best_result['avg'][arg.metric]['f1']
+                )
+                best_result = result
+                _replace_binrel_models_tmp_dirs(arg, labels)
+            else:
+                logger.info(
+                    'Training model [%s] fold [%s] metric [%s] value [%s] is worse than previous [%s].',
+                    arg.model_name, fold, arg.metric,
+                    result['avg'][arg.metric]['f1'],
+                    best_result['avg'][arg.metric]['f1']
+                )
+                _remove_binrel_models_tmp_dirs(arg, labels)
+
+            result_writer = ResultWriter()
+            result_writer.write_predictions(
+                result_path, f'k{fold}.predictions', test_data, ['body', 'lead']
+            )
+            result_writer.write_metrics(
+                result_path, 'metrics', f'k{fold}.' + arg.model_name, result, True
+            )
+            result_writer.write_metrics(
+                arg.result_dir, 'metrics_' + socket.gethostname(), f'k{fold}.' + arg.model_name, result
+            )
+
     logger.info('Finished binary relevance training.')
     return 0
 
@@ -200,7 +272,7 @@ def train_lpset(arg) -> int:
     else:
         data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
         kfold = KFold(n_splits=arg.k_fold)
-        prev_result = None
+        best_result = None
         for fold, (train_index, eval_index) in enumerate(kfold.split(data)):
             train_df = data.iloc[train_index]
             eval_df = data.iloc[eval_index]
@@ -211,24 +283,24 @@ def train_lpset(arg) -> int:
             mc, result = _train(
                 arg, MultiLabeler(labels=labels), result_path, train_df, eval_df
             )
-            if prev_result is None:
-                prev_result = result
+            if best_result is None:
+                best_result = result
                 ModelContainer.remove_checkpoint_dir(result_path)
-            elif prev_result['avg'][arg.metric]['f1'] < result['avg'][arg.metric]['f1']:
+            elif best_result['avg'][arg.metric]['f1'] < result['avg'][arg.metric]['f1']:
                 logger.info(
                     'Training model [%s] fold [%s] metric [%s] value [%s] is better than previous [%s].',
                     arg.model_name, fold, arg.metric,
                     result['avg'][arg.metric]['f1'],
-                    prev_result['avg'][arg.metric]['f1']
+                    best_result['avg'][arg.metric]['f1']
                 )
-                prev_result = result
+                best_result = result
                 ModelContainer.remove_checkpoint_dir(result_path)
             else:
                 logger.info(
                     'Training model [%s] fold [%s] metric [%s] value [%s] is worse than previous [%s].',
                     arg.model_name, fold, arg.metric,
                     result['avg'][arg.metric]['f1'],
-                    prev_result['avg'][arg.metric]['f1']
+                    best_result['avg'][arg.metric]['f1']
                 )
             mc.destroy()
 
