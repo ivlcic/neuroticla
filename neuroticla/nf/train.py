@@ -94,6 +94,16 @@ def _remove_binrel_models_tmp_dirs(arg, labels):
             shutil.rmtree(path1)
 
 
+def _remove_checkpoint_dir(result_path: str):
+    for rd in os.listdir(result_path):
+        checkpoint_path = os.path.join(result_path, rd)
+        if not rd.startswith('checkpoint'):
+            continue
+        if not os.path.isdir(checkpoint_path):
+            continue
+        shutil.rmtree(checkpoint_path)
+
+
 def _train(arg, labeler: Labeler, result_path, train_data, eval_data) -> Tuple[ModelContainer, Dict[str, Any]]:
     text_fields = get_train_fields(arg)
     labels = labeler.source_labels()
@@ -302,6 +312,8 @@ def train_lpset(arg) -> int:
                     result['avg'][arg.metric]['f1'],
                     best_result['avg'][arg.metric]['f1']
                 )
+                _remove_checkpoint_dir(result_path)
+
             mc.destroy()
 
             result_writer = ResultWriter()
