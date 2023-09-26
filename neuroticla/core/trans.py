@@ -65,6 +65,7 @@ class ModelContainer(torch.nn.Module):
             logger.info('Device was not set will use [%s].', device)
         self._device = device
         self._last_eval_metrics: Dict[str, Any] = {}
+        self._eval_callback: Union[Callable, None] = None
 
     def model(self):
         return self._model
@@ -92,7 +93,7 @@ class ModelContainer(torch.nn.Module):
         del self._tokenizer
         torch.cuda.empty_cache()
 
-    def compute_metrics(self, p, callback: Callable = None):
+    def compute_metrics(self, p):
         pass
 
     def last_eval_metrics(self):
@@ -104,7 +105,8 @@ class ModelContainer(torch.nn.Module):
 
     def build(self, args: TrainingArguments,
               train_set: ClassifyDataset,
-              eval_set: ClassifyDataset):
+              eval_set: ClassifyDataset,
+              eval_callback: Union[Callable, None] = None):
         trainer = Trainer(
             model=self._model,
             args=args,
@@ -117,6 +119,7 @@ class ModelContainer(torch.nn.Module):
         trainer.train()
         logger.info('Training done.')
         logger.debug('Starting evaluation...')
+        self._eval_callback = eval_callback
         trainer.evaluate()
         logger.info('Evaluation done.')
         return self._last_eval_metrics
@@ -130,7 +133,8 @@ class ModelContainer(torch.nn.Module):
             compute_metrics=self.compute_metrics
         )
         predictions, labels, _ = trainer.predict(test_set)
-        self.compute_metrics((predictions, labels), callback)
+        self._eval_callback = callback
+        self.compute_metrics((predictions, labels))
         return self._last_eval_metrics
 
     def infer_set(self, training_args: TrainingArguments, data_set: ClassifyDataset):
@@ -160,7 +164,7 @@ class TokenClassifyModel(ModelContainer):
         )
         self._model.to(self._device)
 
-    def compute_metrics(self, p, callback: Callable = None):
+    def compute_metrics(self, p):
         logits, labels_list = p
 
         # select predicted index with maximum logit for each token
@@ -181,11 +185,13 @@ class TokenClassifyModel(ModelContainer):
         self._last_eval_metrics = self._metric.compute(
              references=tagged_labels_list, predictions=tagged_predictions_list, scheme='IOB2', mode='strict'
         )
-        logger.info('Using best metric %s from batch eval results: %s', self._best_metric, self._last_eval_metrics)
+        logger.info(
+            'Using best metric %s from batch eval results: %s', self._best_metric, self._last_eval_metrics
+        )
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
-        if callback is not None:
-            callback(self._labeler, tagged_labels_list, tagged_predictions_list)
+        if self._eval_callback is not None:
+            self._eval_callback(self._labeler, tagged_labels_list, tagged_predictions_list)
         return {
             'precision': self._last_eval_metrics['overall_precision'],
             'recall': self._last_eval_metrics['overall_recall'],
@@ -246,7 +252,7 @@ class SeqClassifyModel(ModelContainer):
         )
         self._model.to(self._device)
 
-    def compute_metrics(self, p, callback: Callable = None):
+    def compute_metrics(self, p):
         logits, y_true = p
 
         # select predicted index with maximum logit for each token
@@ -266,10 +272,12 @@ class SeqClassifyModel(ModelContainer):
             labels = self._labeler.source_labels()
 
         self._last_eval_metrics = self._metric.compute(references=y_true, predictions=y_pred, labels=labels)
-        if callback is not None:
-            callback(self._labeler, y_true, y_pred)
+        if self._eval_callback is not None:
+            self._eval_callback(self._labeler, y_true, y_pred)
 
-        logger.info('Using best metric [%s] from batch eval results: [%s]', self._best_metric, self._last_eval_metrics)
+        logger.info(
+            'Using best metric [%s] from batch eval results: [%s]',self._best_metric, self._last_eval_metrics
+        )
         if len(logger.handlers) > 0:
             logger.handlers[0].flush()
 

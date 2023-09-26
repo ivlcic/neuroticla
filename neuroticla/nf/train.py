@@ -3,7 +3,7 @@ import socket
 import shutil
 import pandas as pd
 
-from typing import Any, Tuple
+from typing import Any, Tuple, Callable
 from transformers import TrainingArguments
 from sklearn.model_selection import KFold
 
@@ -104,7 +104,10 @@ def _remove_checkpoint_dir(result_path: str):
         shutil.rmtree(checkpoint_path)
 
 
-def _train(arg, labeler: Labeler, result_path, train_data, eval_data) -> Tuple[ModelContainer, Dict[str, Any]]:
+def _train(
+        arg, labeler: Labeler, result_path: str, train_data: pd.DataFrame, eval_data: pd.DataFrame,
+        eval_collector: Union[ResultsCollector, None]
+) -> Tuple[ModelContainer, Dict[str, Any]]:
     text_fields = get_train_fields(arg)
     labels = labeler.source_labels()
     logger.info('Training for label(s): [%s] with device [%s]', labels, arg.device)
@@ -128,11 +131,14 @@ def _train(arg, labeler: Labeler, result_path, train_data, eval_data) -> Tuple[M
 
     training_args = _get_training_args(arg, result_path)
     # train the model
-    results = mc.build(training_args, train_set, eval_set)
+    results = mc.build(training_args, train_set, eval_set, eval_collector.collect)
     return mc, results
 
 
-def _test(arg, mc: ModelContainer, result_path, collector, test_data) -> Dict[str, Any]:
+def _test(
+        arg, mc: ModelContainer, result_path: str, test_data: pd.DataFrame,
+        test_collector: Union[ResultsCollector, None]
+) -> Dict[str, Any]:
     text_fields = get_train_fields(arg)
     labels = mc.labeler().source_labels()
     # run tests
@@ -141,15 +147,15 @@ def _test(arg, mc: ModelContainer, result_path, collector, test_data) -> Dict[st
         mc.labeler(), mc.tokenizer(), test_data, arg.max_seq_len, labels, text_fields
     )
     logger.info('Constructed test data set [%s].', len(test_data))
-    results = mc.test(_get_training_args(arg, result_path), test_set, collector.collect)
+    results = mc.test(_get_training_args(arg, result_path), test_set, test_collector.collect)
     logger.info('Test set evaluation results: [%s].', results)
 
     if isinstance(labels, str) or len(labels) == 1:
         lbl = labels if isinstance(labels, str) else labels
-        test_data['p_' + lbl] = collector.y_pred
+        test_data['p_' + lbl] = test_collector.y_pred
     else:
         for lx, lbl in enumerate(labels):
-            test_data['p_' + lbl] = [item[lx] for item in collector.y_pred]
+            test_data['p_' + lbl] = [item[lx] for item in test_collector.y_pred]
 
     return results
 
@@ -173,10 +179,10 @@ def train_binrel(arg) -> int:
             logger.info('Started training model [%s] for label [%s] to path [%s].',
                         arg.model_name, label, sub_result_path)
             mc, _ = _train(
-                arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data
+                arg, BinaryLabeler(labels=[label]), sub_result_path, None, train_data, eval_data
             )
             _test(
-                arg, mc, sub_result_path, collector, test_data
+                arg, mc, sub_result_path, test_data, collector
             )
             ModelContainer.remove_checkpoint_dir(sub_result_path)
             mc.destroy()
@@ -207,7 +213,7 @@ def train_binrel(arg) -> int:
                 logger.info('Started training model [%s] for label [%s] to path [%s].',
                             arg.model_name, label, sub_result_path)
                 mc, _ = _train(
-                    arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data
+                    arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data, collector
                 )
                 ModelContainer.remove_checkpoint_dir(sub_result_path)
                 mc.destroy()
@@ -271,7 +277,7 @@ def train_lpset(arg) -> int:
             arg, MultiLabeler(labels=labels), result_path, train_data, eval_data
         )
         result = _test(
-            arg, mc, result_path, collector, test_data
+            arg, mc, result_path, test_data, collector
         )
         ModelContainer.remove_checkpoint_dir(result_path)
 
