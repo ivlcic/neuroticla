@@ -116,6 +116,7 @@ class ModelContainer(torch.nn.Module):
             compute_metrics=self.compute_metrics
         )
         logger.debug('Starting training...')
+        self._eval_callback = None
         trainer.train()
         logger.info('Training done.')
         logger.debug('Starting evaluation...')

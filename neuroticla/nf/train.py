@@ -106,7 +106,7 @@ def _remove_checkpoint_dir(result_path: str):
 
 def _train(
         arg, labeler: Labeler, result_path: str, train_data: pd.DataFrame, eval_data: pd.DataFrame,
-        eval_collector: Union[ResultsCollector, None]
+        eval_collector: Union[ResultsCollector, None] = None
 ) -> Tuple[ModelContainer, Dict[str, Any]]:
     text_fields = get_train_fields(arg)
     labels = labeler.source_labels()
@@ -135,10 +135,8 @@ def _train(
     return mc, results
 
 
-def _test(
-        arg, mc: ModelContainer, result_path: str, test_data: pd.DataFrame,
-        test_collector: Union[ResultsCollector, None]
-) -> Dict[str, Any]:
+def _test(arg, mc: ModelContainer, result_path: str, test_data: pd.DataFrame,
+          test_collector: Union[ResultsCollector, None]) -> Dict[str, Any]:
     text_fields = get_train_fields(arg)
     labels = mc.labeler().source_labels()
     # run tests
@@ -150,14 +148,21 @@ def _test(
     results = mc.test(_get_training_args(arg, result_path), test_set, test_collector.collect)
     logger.info('Test set evaluation results: [%s].', results)
 
+    return results
+
+
+def _save_predictions(labels: List[str], data: pd.DataFrame, collector: Union[ResultsCollector, None]):
     if isinstance(labels, str) or len(labels) == 1:
         lbl = labels if isinstance(labels, str) else labels
-        test_data['p_' + lbl] = test_collector.y_pred
+        data['p_' + lbl] = collector.y_pred
     else:
         for lx, lbl in enumerate(labels):
-            test_data['p_' + lbl] = [item[lx] for item in test_collector.y_pred]
+            data['p_' + lbl] = [item[lx] for item in collector.y_pred]
 
-    return results
+
+def _clear_predictions(labels: List[str], data: pd.DataFrame):
+    p_labels = ['p_' + item for item in labels]
+    data.drop(p_labels, axis=1, inplace=True)
 
 
 def train_binrel(arg) -> int:
@@ -184,6 +189,7 @@ def train_binrel(arg) -> int:
             _test(
                 arg, mc, sub_result_path, test_data, collector
             )
+            _save_predictions(labels, test_data, collector)
             ModelContainer.remove_checkpoint_dir(sub_result_path)
             mc.destroy()
 
@@ -193,8 +199,9 @@ def train_binrel(arg) -> int:
         )
 
         result_writer = ResultWriter()
-        result_writer.write_predictions(result_path, 'predictions', test_data, ['body', 'lead'])
-        result_writer.write_metrics(result_path, 'metrics', 'kt.' + arg.model_name, result, True)
+        result_writer.write_predictions(result_path, 'kt.predictions', test_data, ['body', 'lead'])
+        _clear_predictions(labels, test_data)
+        result_writer.write_metrics(result_path, 'kt.metrics', 'kt.' + arg.model_name, result, True)
         result_writer.write_metrics(arg.result_dir, 'results_' + socket.gethostname(), 'kt.' + arg.model_name, result)
     else:
         data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
@@ -213,8 +220,9 @@ def train_binrel(arg) -> int:
                 logger.info('Started training model [%s] for label [%s] to path [%s].',
                             arg.model_name, label, sub_result_path)
                 mc, _ = _train(
-                    arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data, collector
+                    arg, BinaryLabeler(labels=[label]), sub_result_path, train_df, eval_df, collector
                 )
+                _save_predictions(labels, eval_df, collector)
                 ModelContainer.remove_checkpoint_dir(sub_result_path)
                 mc.destroy()
 
@@ -245,8 +253,9 @@ def train_binrel(arg) -> int:
 
             result_writer = ResultWriter()
             result_writer.write_predictions(
-                result_path, f'k{fold}.predictions', test_data, ['body', 'lead']
+                result_path, f'k{fold}.predictions', eval_df, ['body', 'lead']
             )
+            _clear_predictions(labels, eval_df)
             result_writer.write_metrics(
                 result_path, 'metrics', f'k{fold}.' + arg.model_name, result, True
             )
@@ -279,11 +288,13 @@ def train_lpset(arg) -> int:
         result = _test(
             arg, mc, result_path, test_data, collector
         )
+        _save_predictions(labels, test_data, collector)
         ModelContainer.remove_checkpoint_dir(result_path)
 
         result_writer = ResultWriter()
-        result_writer.write_predictions(result_path, 'predictions', test_data, ['body', 'lead'])
-        result_writer.write_metrics(result_path, 'metrics', 'kt.' + arg.model_name, result, True)
+        result_writer.write_predictions(result_path, 'kt.predictions', test_data, ['body', 'lead'])
+        _clear_predictions(labels, test_data)
+        result_writer.write_metrics(result_path, 'kt.metrics', 'kt.' + arg.model_name, result, True)
         result_writer.write_metrics(arg.result_dir, 'metrics_' + socket.gethostname(), 'kt.' + arg.model_name, result)
     else:
         data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
@@ -296,9 +307,12 @@ def train_lpset(arg) -> int:
                 'Training model [%s] fold [%s] with train size [%s] and validation size [%s]...',
                 arg.model_name, fold, train_df.shape[0], eval_df.shape[0]
             )
+            collector = ResultsCollector()
             mc, result = _train(
-                arg, MultiLabeler(labels=labels), result_path, train_df, eval_df
+                arg, MultiLabeler(labels=labels), result_path, train_df, eval_df, collector
             )
+            _save_predictions(labels, eval_df, collector)
+
             if best_result is None:
                 best_result = result
                 ModelContainer.remove_checkpoint_dir(result_path)
@@ -326,6 +340,7 @@ def train_lpset(arg) -> int:
             result_writer.write_predictions(
                 result_path, f'k{fold}.predictions', test_data, ['body', 'lead']
             )
+            _clear_predictions(labels, eval_df)
             result_writer.write_metrics(
                 result_path, 'metrics', f'k{fold}.' + arg.model_name, result, True
             )

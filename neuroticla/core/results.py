@@ -85,9 +85,9 @@ class ResultWriter:
         for d in drop:
             if d in data:
                 checked_drop.append(d)
-        data.drop(checked_drop, axis=1, inplace=True)
+        tmp_data = data.drop(checked_drop, axis=1)
         file_path = os.path.join(path, base_name + '.cvs')
-        data.to_csv(file_path, encoding='utf-8', index=False)
+        tmp_data.to_csv(file_path, encoding='utf-8', index=False)
 
     def write_metrics(self, path: str, base_name: str, model_name: str, results: Dict[str, Any],
                       overwrite: bool = False):
