@@ -153,7 +153,7 @@ def _test(arg, mc: ModelContainer, result_path: str, test_data: pd.DataFrame,
 
 def _save_predictions(labels: List[str], data: pd.DataFrame, collector: Union[ResultsCollector, None]):
     if isinstance(labels, str) or len(labels) == 1:
-        lbl = labels if isinstance(labels, str) else labels
+        lbl = labels if isinstance(labels, str) else labels[0]
         data['p_' + lbl] = collector.y_pred
     else:
         for lx, lbl in enumerate(labels):
@@ -184,7 +184,7 @@ def train_binrel(arg) -> int:
             logger.info('Started training model [%s] for label [%s] to path [%s].',
                         arg.model_name, label, sub_result_path)
             mc, _ = _train(
-                arg, BinaryLabeler(labels=[label]), sub_result_path, None, train_data, eval_data
+                arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data, None
             )
             _test(
                 arg, mc, sub_result_path, test_data, collector
