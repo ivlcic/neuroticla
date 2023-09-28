@@ -208,8 +208,8 @@ def train_binrel(arg) -> int:
         kfold = KFold(n_splits=arg.k_fold)
         best_result = None
         for fold, (train_index, eval_index) in enumerate(kfold.split(data)):
-            train_df = data.iloc[train_index]
-            eval_df = data.iloc[eval_index]
+            train_df = data.iloc[train_index].copy()
+            eval_df = data.iloc[eval_index].copy()
             logger.info(
                 'Training model [%s] fold [%s] with train size [%s] and validation size [%s]...',
                 arg.model_name, fold, train_df.shape[0], eval_df.shape[0]
@@ -301,8 +301,8 @@ def train_lpset(arg) -> int:
         kfold = KFold(n_splits=arg.k_fold)
         best_result = None
         for fold, (train_index, eval_index) in enumerate(kfold.split(data)):
-            train_df = data.iloc[train_index]
-            eval_df = data.iloc[eval_index]
+            train_df = data.iloc[train_index].copy()
+            eval_df = data.iloc[eval_index].copy()
             logger.info(
                 'Training model [%s] fold [%s] with train size [%s] and validation size [%s]...',
                 arg.model_name, fold, train_df.shape[0], eval_df.shape[0]
