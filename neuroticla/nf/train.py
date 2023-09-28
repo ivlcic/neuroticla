@@ -184,7 +184,7 @@ def train_binrel(arg) -> int:
             logger.info('Started training model [%s] for label [%s] to path [%s].',
                         arg.model_name, label, sub_result_path)
             mc, _ = _train(
-                arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data, None
+                arg, BinaryLabeler(labels=[label]), sub_result_path, train_data, eval_data
             )
             _test(
                 arg, mc, sub_result_path, test_data, collector
@@ -201,7 +201,7 @@ def train_binrel(arg) -> int:
         result_writer = ResultWriter()
         result_writer.write_predictions(result_path, 'kt.predictions', test_data, ['body', 'lead'])
         _clear_predictions(labels, test_data)
-        result_writer.write_metrics(result_path, 'kt.metrics', 'kt.' + arg.model_name, result, True)
+        result_writer.write_metrics(result_path, 'metrics', 'kt.' + arg.model_name, result)
         result_writer.write_metrics(arg.result_dir, 'results_' + socket.gethostname(), 'kt.' + arg.model_name, result)
     else:
         data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
@@ -257,7 +257,7 @@ def train_binrel(arg) -> int:
             )
             _clear_predictions(labels, eval_df)
             result_writer.write_metrics(
-                result_path, 'metrics', f'k{fold}.' + arg.model_name, result, True
+                result_path, 'metrics', f'k{fold}.' + arg.model_name, result
             )
             result_writer.write_metrics(
                 arg.result_dir, 'metrics_' + socket.gethostname(), f'k{fold}.' + arg.model_name, result
@@ -294,7 +294,7 @@ def train_lpset(arg) -> int:
         result_writer = ResultWriter()
         result_writer.write_predictions(result_path, 'kt.predictions', test_data, ['body', 'lead'])
         _clear_predictions(labels, test_data)
-        result_writer.write_metrics(result_path, 'kt.metrics', 'kt.' + arg.model_name, result, True)
+        result_writer.write_metrics(result_path, 'metrics', 'kt.' + arg.model_name, result)
         result_writer.write_metrics(arg.result_dir, 'metrics_' + socket.gethostname(), 'kt.' + arg.model_name, result)
     else:
         data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
@@ -342,7 +342,7 @@ def train_lpset(arg) -> int:
             )
             _clear_predictions(labels, eval_df)
             result_writer.write_metrics(
-                result_path, 'metrics', f'k{fold}.' + arg.model_name, result, True
+                result_path, 'metrics', f'k{fold}.' + arg.model_name, result
             )
             result_writer.write_metrics(
                 arg.result_dir, 'metrics_' + socket.gethostname(), f'k{fold}.' + arg.model_name, result
