@@ -222,7 +222,7 @@ def train_binrel(arg) -> int:
                 mc, _ = _train(
                     arg, BinaryLabeler(labels=[label]), sub_result_path, train_df, eval_df, collector
                 )
-                _save_predictions(labels, eval_df, collector)
+                _save_predictions([label], eval_df, collector)
                 ModelContainer.remove_checkpoint_dir(sub_result_path)
                 mc.destroy()
 
