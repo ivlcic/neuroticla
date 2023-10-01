@@ -80,7 +80,10 @@ def _train(
 
     training_args = _get_training_args(arg, result_path)
     # train the model
-    results = mc.build(training_args, train_set, eval_set, eval_collector.collect)
+    if eval_collector is not None:
+        results = mc.build(training_args, train_set, eval_set, eval_collector.collect)
+    else:
+        results = mc.build(training_args, train_set, eval_set)
     return mc, results
 
 
