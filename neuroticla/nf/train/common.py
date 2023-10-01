@@ -170,9 +170,9 @@ def _write_results(arg, labels, result_path, result, df: pd.DataFrame, fold: Uni
     _clear_predictions(labels, df)
     # write metrics to model collection dir local file metrics.json and metrics.csv
     result_writer.write_metrics(
-        result_path, 'metrics', f'k{fold}.' + arg.model_name, result
+        result_path, 'metrics', arg.model_name, result
     )
     # write metrics to host global file
     result_writer.write_metrics(
-        arg.result_dir, 'metrics_' + socket.gethostname(), f'k{fold}.' + arg.model_name, result
+        arg.result_dir, 'metrics_' + socket.gethostname(), arg.model_name, result
     )
