@@ -97,8 +97,8 @@ def compute_model_name(arg, pt_method: str) -> str:
     if train_fields is not None:
         f_str = '.f-' + '_'.join([text_field[0] for text_field in train_fields if text_field])
     fold = 't'
-    if arg.fold > 0:
-        fold = arg.fold
+    if arg.k_fold > 0:
+        fold = arg.k_fold
     m = (f'k{fold}.{pt_method}.{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}'
          f'.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}')
     return m
