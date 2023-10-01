@@ -17,6 +17,7 @@ from ...nf.utils import compute_model_name, compute_model_path, write_model_para
 
 logger = logging.getLogger('nf.train')
 
+
 def _get_training_args(arg, result_path: str) -> TrainingArguments:
     return TrainingArguments(
             output_dir=result_path,
