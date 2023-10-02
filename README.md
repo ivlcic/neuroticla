@@ -267,40 +267,64 @@ Which is based on
 ```
 
 ### Train
-By default, only a body field is used for the training, and subset of frame tags is selected based on corpora:
+By default, only a `body` field is used for the training, subset of frame labels is selected based on corpora, and no cross-validation is done:  
+We can select
+ - label power-set method with: `lpset` or binary-relevance: `binrel`
+ - number of epochs: `-e 20`
+ - batch size: `-b 24`
+ - learn rate: `-l 2e-5e`
+ - pretrained model: 
+   - `-p xlmrb` for XLM-RoBERTa-base
+   - `-p mcbert` for Multilingual Cased BERT
+   - `-p xlmrl` for XLM-RoBERTa-large
+ - select metric for best model:
+   - Traditional micro F1 score (default): `-m micro-1`
+   - Traditional macro F1 score (default): `-m macro-1`
+   - Average micro F1 score of traditional positive-wise and negative-wise labels: `-m micro` 
+   - Average macro F1 score of traditional positive-wise and negative-wise labels: `-m macro`
+ - enable progress bars: `--tqdm`
+ - force custom model name: `-n mymodel`
+ 
 ```
-./nf train binrel --tqdm -e 20 -b 24 -u eco -p mcbert aussda_manual
-./nf train binrel --tqdm -e 20 -b 24 -u eco -p xlmrb aussda_manual
-
-./nf train binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual &>train-binrel-macro-xlmrb.log
-./nf train binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>train-binrel-macro-mcbert.log
-
-./nf train lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual &>train-lpset-macro-xlmrb.log
-./nf train lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual &>train-lpset-macro-mcbert.log
+./nf train lpset -e 20 -b 24 -p xlmrb aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-b-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-b-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-b-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-b-mcbert.log
 ```
-For usage of an additional text fields you have to enumerate them:
+We can add additional fields for training:  
+(for title and body: `-f title,body`)
 ```
-./nf train binrel --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>train-binrel-macro-tb-xlmrb.log
-./nf train binrel --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>train-binrel-macro-tb-mcbert.log
-
-./nf train lpset --tqdm -e 20 -b 24 -p mcbert -f title,body aussda_manual &>train-lpset-macro-tb-xlmrb.log
-./nf train lpset --tqdm -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>train-lpset-macro-tb-mcbert.log
+./nf train lpset -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-tb-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-tb-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-tb-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-tb-mcbert.log
 ```
 
-For usage of different average metric for best model selection you have to specify it:
+We can turn on k-fold cross validation:  
+(ten folds: `-k 10`):
 ```
-./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual &>train-lpset-micro1-xlmrb.log
-./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual &>train-lpset-micro1-mcbert.log
-./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p xlmrb -f title,body aussda_manual &>train-lpset-micro1-tb-xlmrb.log
-./nf train lpset --tqdm -e 20 -b 24 -m micro-1 -p mcbert -f title,body aussda_manual &>train-lpset-micro1-tb-mcbert.log
+./nf train lpset -e 20 -b 24 -p xlmrb -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-b-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-b-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-b-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-b-mcbert.log
+```
 
-./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual &>train-binrel-micro1-xlmrb.log
-./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual &>train-binrel-micro1-mcbert.log
-./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p xlmrb -f title,body aussda_manual &>train-binrel-micro1-tb-xlmrb.log
-./nf train binrel --tqdm -e 20 -b 24 -m micro-1 -p mcbert -f title,body aussda_manual &>train-binrel-micro1-tb-mcbert.log
+We can turn on k-fold cross validation with additional fields for training:
+```
+./nf train lpset -e 20 -b 24 -p xlmrb -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-tb-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-tb-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-tb-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-tb-mcbert.log
+```
+
+We can select only specified subset of labels to train with average macro :  
+(subset of labels: `-u eco,sec`)
+```
+./nf train lpset --tqdm -e 20 -b 24 -u eco,sec -f title,body -p xlmrb aussda_manual
 ```
 
 ### Test
+TODO:
 Epochs and pretrained model names are used just for model name computation.
 ```
 # the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_manual.f-b aussda_manual
