@@ -105,8 +105,12 @@ def _test(arg, mc: ModelContainer, result_path: str, test_data: pd.DataFrame,
 
 def _replace_binrel_models_tmp_dirs(arg, labels):
     for label in labels:
-        path1 = os.path.join(compute_model_path(arg, 'binrel'), label + '-tmp')
-        path2 = os.path.join(compute_model_path(arg, 'binrel'), label)
+        path1 = os.path.join(
+            compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name), label + '-tmp'
+        )
+        path2 = os.path.join(
+            compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name), label
+        )
         if os.path.exists(path2):
             shutil.rmtree(path2)
         shutil.move(path1, path2)
@@ -114,7 +118,9 @@ def _replace_binrel_models_tmp_dirs(arg, labels):
 
 def _remove_binrel_models_tmp_dirs(arg, labels):
     for label in labels:
-        path1 = os.path.join(compute_model_path(arg, 'binrel'), label + '-tmp')
+        path1 = os.path.join(
+            compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name), label + '-tmp'
+        )
         if os.path.exists(path1):
             shutil.rmtree(path1)
 
