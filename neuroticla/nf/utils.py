@@ -73,21 +73,6 @@ def get_labels_str(labels: List[str]) -> str:
     return l_str
 
 
-def compute_model_name_old(arg, train_fields: List[str], labels: List[str] = None, force_label: bool = False) -> str:
-    l_str = get_labels_str(labels)
-    f_str = ''
-    if train_fields is not None:
-        f_str = '.f-' + '_'.join([text_field[0] for text_field in train_fields if text_field])
-    if arg.model_name is not None:
-        if force_label:
-            m = f'{arg.model_name}{l_str}'
-        else:
-            m = arg.model_name
-    else:
-        m = f'{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}'
-    return m
-
-
 def compute_model_name(arg, pt_method: str) -> str:
     if arg.model_name is not None:
         return arg.model_name
@@ -96,10 +81,7 @@ def compute_model_name(arg, pt_method: str) -> str:
     train_fields = get_train_fields(arg)
     if train_fields is not None:
         f_str = '.f-' + '_'.join([text_field[0] for text_field in train_fields if text_field])
-    fold = 't'
-    if arg.k_fold > 0:
-        fold = arg.k_fold
-    m = (f'k{fold}.{pt_method}.{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}'
+    m = (f'{pt_method}.{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}'
          f'.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}')
     return m
 
@@ -138,13 +120,13 @@ def read_model_params(out_dir: str, arg) -> Dict[str, str]:
     return params
 
 
-def compute_model_path(arg, subdir: str) -> str:
-    if not os.path.exists(arg.model_name):
-        result_path = os.path.join(arg.result_dir, subdir, arg.model_name)
+def compute_model_path(result_path: str, model_dir: str) -> str:
+    if not os.path.exists(model_dir):
+        result_path = os.path.join(result_path, model_dir)
         if not os.path.exists(result_path):
             os.makedirs(result_path)
     else:
-        result_path = arg.model_name
+        result_path = model_dir
     return result_path
 
 

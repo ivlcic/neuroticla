@@ -41,7 +41,7 @@ def _prep(arg, pt_method: str) -> Tuple[str, List[str]]:
     # compute a model name from the train params if not given
     arg.model_name = compute_model_name(arg, pt_method)
     # compute final model collection path based on model name
-    result_path = os.path.join(compute_model_path(arg, pt_method))
+    result_path = os.path.join(compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name))
     # store all input parameters
     params = write_model_params(result_path, arg, pt_method)
     # determine which labels to use - all or just a subset
@@ -174,9 +174,9 @@ def _write_results(arg, labels, result_path, result, df: pd.DataFrame, fold: Uni
     _clear_predictions(labels, df)
     # write metrics to model collection dir local file metrics.json and metrics.csv
     result_writer.write_metrics(
-        result_path, 'metrics', arg.model_name, result
+        result_path, 'metrics', f'k{fold}.' + arg.model_name, result
     )
     # write metrics to host global file
     result_writer.write_metrics(
-        arg.result_dir, 'metrics_' + socket.gethostname(), arg.model_name, result
+        arg.result_dir, 'metrics_' + socket.gethostname(), f'k{fold}.' + arg.model_name, result
     )
