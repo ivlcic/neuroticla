@@ -69,7 +69,9 @@ def train_binrel(arg) -> int:
         # for each label we'll train a model, and we'll store the predictions from the test-set
         collector = ResultsCollector()
         for label in labels:
-            sub_result_path = os.path.join(compute_model_path(arg, 'binrel'), label)
+            sub_result_path = os.path.join(
+                compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name), label
+            )
             logger.info('Started training model [%s] for label [%s] to path [%s].',
                         arg.model_name, label, sub_result_path)
             # train the model for a single label
@@ -109,7 +111,9 @@ def train_binrel(arg) -> int:
             # for each label we'll train a model, and we'll store the predictions from the eval-set
             collector = ResultsCollector()
             for label in labels:
-                sub_result_path = os.path.join(compute_model_path(arg, 'binrel'), label + '-tmp')
+                sub_result_path = os.path.join(
+                    compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name), label + '-tmp'
+                )
                 logger.info('Started training model [%s] for label [%s] to path [%s].',
                             arg.model_name, label, sub_result_path)
                 # train the model for a single label
