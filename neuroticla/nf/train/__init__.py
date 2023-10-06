@@ -70,7 +70,7 @@ def train_binrel(arg) -> int:
         collector = ResultsCollector()
         for label in labels:
             sub_result_path = os.path.join(
-                compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name), label
+                result_path, label
             )
             logger.info('Started training model [%s] for label [%s] to path [%s].',
                         arg.model_name, label, sub_result_path)
