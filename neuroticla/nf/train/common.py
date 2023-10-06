@@ -41,7 +41,10 @@ def _prep(arg, pt_method: str) -> Tuple[str, List[str]]:
     # compute a model name from the train params if not given
     arg.model_name = compute_model_name(arg, pt_method)
     # compute final model collection path based on model name
-    result_path = os.path.join(compute_model_path(arg.result_dir, f'k{arg.k_fold}.' + arg.model_name))
+    fold = 't'
+    if arg.k_fold > 0:
+        fold = arg.k_fold
+    result_path = os.path.join(compute_model_path(arg.result_dir, f'k{fold}.' + arg.model_name))
     # store all input parameters
     params = write_model_params(result_path, arg, pt_method)
     # determine which labels to use - all or just a subset
