@@ -15,9 +15,6 @@ def add_common_test_train_args(module_name: str, parser: ArgumentParser) -> None
     CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
     parser.add_argument(
-        '--max_seq_len', help='Max sentence length in sub-word tokens.', type=int, default=256
-    )
-    parser.add_argument(
         '--no_misc', help='Remove MISC tag (replace i with "O").', action='store_true', default=False
     )
     parser.add_argument(

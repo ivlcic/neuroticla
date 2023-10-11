@@ -1,8 +1,6 @@
-import pandas as pd
-from transformers import TrainingArguments
-
-from .common import run_inference
-from ...core.labels import BinaryLabeler
+from .common import _get_train_params, _get_inference_data, _infer, _get_training_args, _write_results
+from ...core.labels import BinaryLabeler, MultiLabeler
+from ...core.results import ResultsCollector
 from ...core.trans import SeqClassifyModel
 from ...nf.utils import *
 
@@ -10,102 +8,81 @@ logger = logging.getLogger('nf.infer')
 
 
 def add_args(module_name: str, parser: ArgumentParser) -> None:
-    CommonArguments.train(parser)
+    CommonArguments.test(parser, 24)
     CommonArguments.raw_data_dir(module_name, parser, ('-i', '--data_in_dir'))
+    CommonArguments.result_dir(module_name, parser, ('-m', '--model_dir'))
     CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
-    parser.add_argument(
-        '--max_seq_len', help='Max sub-word tokens length.', type=int, default=512
-    )
     parser.add_argument(
         '--tqdm', help='Enable TDQM.', action='store_true', default=False
     )
     parser.add_argument(
         '-n', '--model_name', type=str, default=None,
-        help='Target model name. (overrides other settings used for model name construction)',
-    )
-    labels = ','.join(get_all_labels())
-    parser.add_argument(
-        '-u', '--subset', type=str, default=None, required=False,
-        help='Subset of the labels to use for training (comma separated: ' + labels + ')',
+        help='Trained model name or path.',
     )
     text_fields = ','.join(get_all_text_fields())
     parser.add_argument(
-        '-f', '--train_fields', type=str, default='body', required=False,
-        help='Text fields to use for testing: ' + text_fields + ')',
+        '-f', '--fields', type=str, default='body', required=False,
+        help='Text fields to use for inference: ' + text_fields + ')',
     )
-    parser.add_argument(
-        '-p', '--pretrained_model', type=str, default=None, required=False,
-        help='Pretrained model that was used for fine tuning (used only for model name construction)',
-        choices=['mcbert', 'xlmrb', 'xlmrl']
-    )
-    parser.add_argument(
-        '-m', '--metric', type=str, default='macro', required=False,
-        help='Metric to select for best model selection (used only for model name construction)',
-        choices=['micro-1', 'micro', 'macro-1', 'macro']
-    )
-
-    parser.add_argument('-c', '--corpora', type=str, default='aussda_manual', required=False,
-                        help='Corpora prefix or path prefix (used only for model name construction)')
     parser.add_argument('input_file', type=str, default=None,
                         help='File prefix or path prefix to use for inference')
 
 
-def _get_training_args(arg, result_path: str) -> TrainingArguments:
-    return TrainingArguments(
-        output_dir=result_path,
-        per_device_train_batch_size=arg.batch,
-        per_device_eval_batch_size=arg.batch,
-        disable_tqdm=not arg.tqdm
-    )
-
-
 def infer_binrel(arg) -> int:
-    labels = get_labels(arg)
-    if not labels:
-        return 1
+    train_params, model_dir, model_name = _get_train_params(arg)
 
-    l_str = get_labels_str(labels)
-    text_fields = get_train_fields(arg)
-    logger.info('Started inference for labels %s and text fields %s.', labels, text_fields)
+    labels = get_all_labels(train_params['corpora'])
+    text_fields = get_text_fields(arg.fields)
+    logger.info(
+        'Started model %s inference for labels %s and text fields %s.',
+        train_params['name'], labels, text_fields
+    )
+    data = _get_inference_data(arg, text_fields)
 
-    computed_name = arg.model_name
-
-    input_file = os.path.join(arg.data_in_dir, arg.input_file)
-    if not os.path.exists(input_file):
-        input_file = arg.input_file
-    if not os.path.exists(input_file):
-        raise ValueError(f'Missing input file [{input_file}]')
-    base_name = os.path.splitext(os.path.basename(input_file))[0]
-    data: pd.DataFrame = pd.read_csv(input_file, encoding='utf-8')
-
+    collector = ResultsCollector()
     for label in labels:
-        # model name w/o label
-        arg.model_name = compute_model_name(arg, text_fields, None, True)
-        result_path = os.path.join(compute_model_path(arg, 'binrel'), label)
+        sub_model_dir = os.path.join(model_dir, label)
         logger.info('Started predicting with model [%s] for label [%s] from path [%s].',
-                    arg.model_name, label, result_path)
+                    arg.model_name, label, sub_model_dir)
 
         logger.info('Predicting label: [%s] with device [%s]', label, arg.device)
         mc = SeqClassifyModel(
-            result_path,
+            sub_model_dir,
             labeler=BinaryLabeler(labels=[label]),
             device=arg.device
         )
-        results = run_inference(
-            arg, mc, _get_training_args(arg, result_path), data, label, text_fields
+        predictions, true_values = _infer(
+            arg, mc, _get_training_args(arg, sub_model_dir), data, text_fields
         )
-        data['p_' + label] = results
+        data['p_' + label] = predictions
+        if true_values is not None:
+            collector.collect(mc.labeler(), true_values, predictions)
+        mc.destroy()
 
-        # reset model name back to original
-        if computed_name:
-            arg.model_name = computed_name
+    _write_results(arg, model_name, data, collector.get_all_true(), collector.get_all_pred(), labels)
 
-    # write predictions
-    arg.model_name = compute_model_name(arg, text_fields, None, True)  # model name w/o label
-    result_path = os.path.join(compute_model_path(arg, 'binrel'))
-    test_pred_path = os.path.join(
-        os.path.dirname(result_path), base_name + '.binrel.' + arg.model_name + l_str + '.cvs'
+    return 0
+
+
+def infer_lpset(arg) -> int:
+    train_params, model_dir, model_name = _get_train_params(arg)
+
+    labels = get_all_labels(train_params['corpora'])
+    text_fields = get_text_fields(arg.fields)
+    logger.info(
+        'Started model %s inference for labels %s and text fields %s.',
+        train_params['name'], labels, text_fields
     )
-    data.to_csv(test_pred_path, encoding='utf-8', index=False)
+    data = _get_inference_data(arg, text_fields)
+    mc = SeqClassifyModel(
+        model_dir,
+        labeler=MultiLabeler(labels=labels),
+        device=arg.device
+    )
+    predictions, true_values = _infer(
+        arg, mc, _get_training_args(arg, model_dir), data, text_fields
+    )
+
+    _write_results(arg, model_name, data, true_values, predictions, labels)
     return 0

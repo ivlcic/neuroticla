@@ -279,42 +279,42 @@ We can select
    - `-p xlmrl` for XLM-RoBERTa-large
  - select metric for best model:
    - Traditional micro F1 score (default): `-m micro-1`
-   - Traditional macro F1 score (default): `-m macro-1`
+   - Traditional macro F1 score: `-m macro-1`
    - Average micro F1 score of traditional positive-wise and negative-wise labels: `-m micro` 
    - Average macro F1 score of traditional positive-wise and negative-wise labels: `-m macro`
  - enable progress bars: `--tqdm`
  - force custom model name: `-n mymodel`
  
 ```
-./nf train lpset -e 20 -b 24 -p xlmrb aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-b-xlmrb.log
-./nf train lpset -e 20 -b 24 -p mcbert aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-b-mcbert.log
-./nf train binrel -e 20 -b 24 -p xlmrb aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-b-xlmrb.log
-./nf train binrel -e 20 -b 24 -p mcbert aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-b-mcbert.log
+./nf train lpset -e 20 -b 24 -p xlmrb aussda_manual &>result/nf/kt-lpset-micro1-b-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert aussda_manual &>result/nf/kt-lpset-micro1-b-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb aussda_manual &>result/nf/kt-binrel-micro1-b-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert aussda_manual &>result/nf/kt-binrel-micro1-b-mcbert.log
 ```
 We can add additional fields for training:  
 (for title and body: `-f title,body`)
 ```
-./nf train lpset -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-tb-xlmrb.log
-./nf train lpset -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-lpset-micro1-tb-mcbert.log
-./nf train binrel -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-tb-xlmrb.log
-./nf train binrel -e 20 -b 24 -p mcbert -f title,body aussda_manual &>/root/neuroticla/result/nf/kt-binrel-micro1-tb-mcbert.log
+./nf train lpset -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>result/nf/kt-lpset-micro1-tb-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert -f title,body aussda_manual &>result/nf/kt-lpset-micro1-tb-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb -f title,body aussda_manual &>result/nf/kt-binrel-micro1-tb-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert -f title,body aussda_manual &>result/nf/kt-binrel-micro1-tb-mcbert.log
 ```
 
 We can turn on k-fold cross validation:  
 (ten folds: `-k 10`):
 ```
-./nf train lpset -e 20 -b 24 -p xlmrb -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-b-xlmrb.log
-./nf train lpset -e 20 -b 24 -p mcbert -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-b-mcbert.log
-./nf train binrel -e 20 -b 24 -p xlmrb -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-b-xlmrb.log
-./nf train binrel -e 20 -b 24 -p mcbert -k 10 aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-b-mcbert.log
+./nf train lpset -e 20 -b 24 -p xlmrb -k 10 aussda_manual &>result/nf/k10-lpset-micro1-b-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert -k 10 aussda_manual &>result/nf/k10-lpset-micro1-b-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb -k 10 aussda_manual &>result/nf/k10-binrel-micro1-b-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert -k 10 aussda_manual &>result/nf/k10-binrel-micro1-b-mcbert.log
 ```
 
 We can turn on k-fold cross validation with additional fields for training:
 ```
-./nf train lpset -e 20 -b 24 -p xlmrb -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-tb-xlmrb.log
-./nf train lpset -e 20 -b 24 -p mcbert -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-lpset-micro1-tb-mcbert.log
-./nf train binrel -e 20 -b 24 -p xlmrb -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-tb-xlmrb.log
-./nf train binrel -e 20 -b 24 -p mcbert -k 10 -f title,body aussda_manual &>/root/neuroticla/result/nf/k10-binrel-micro1-tb-mcbert.log
+./nf train lpset -e 20 -b 24 -p xlmrb -k 10 -f title,body aussda_manual &>result/nf/k10-lpset-micro1-tb-xlmrb.log
+./nf train lpset -e 20 -b 24 -p mcbert -k 10 -f title,body aussda_manual &>result/nf/k10-lpset-micro1-tb-mcbert.log
+./nf train binrel -e 20 -b 24 -p xlmrb -k 10 -f title,body aussda_manual &>result/nf/k10-binrel-micro1-tb-xlmrb.log
+./nf train binrel -e 20 -b 24 -p mcbert -k 10 -f title,body aussda_manual &>result/nf/k10-binrel-micro1-tb-mcbert.log
 ```
 
 We can select only specified subset of labels to train with average macro :  
@@ -323,8 +323,24 @@ We can select only specified subset of labels to train with average macro :
 ./nf train lpset --tqdm -e 20 -b 24 -u eco,sec -f title,body -p xlmrb aussda_manual
 ```
 
+### Inference
+Binary relevance:
+```
+./nf infer lpset -n kt.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+./nf infer lpset -n kt.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+./nf infer lpset -n k10.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+./nf infer lpset -n k10.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+```
+Binary relevance:
+```
+./nf infer binrel -n kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+./nf infer binrel -n kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+./nf infer binrel -n k10.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+./nf infer binrel -n k10.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
+```
+
 ### Test
-TODO:
+TODO ...  
 Epochs and pretrained model names are used just for model name computation.
 ```
 # the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_manual.f-b aussda_manual

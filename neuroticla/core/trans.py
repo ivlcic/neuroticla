@@ -2,6 +2,7 @@ import os
 import shutil
 import logging
 import numpy as np
+import pandas as pd
 import torch
 import evaluate
 
@@ -66,6 +67,9 @@ class ModelContainer(torch.nn.Module):
         self._device = device
         self._last_eval_metrics: Dict[str, Any] = {}
         self._eval_callback: Union[Callable, None] = None
+
+    def max_len(self):
+        return self._tokenizer.model_max_length
 
     def model(self):
         return self._model
@@ -138,7 +142,7 @@ class ModelContainer(torch.nn.Module):
         self.compute_metrics((predictions, labels))
         return self._last_eval_metrics
 
-    def infer_set(self, training_args: TrainingArguments, data_set: ClassifyDataset):
+    def infer_data_set(self, training_args: TrainingArguments, data_set: ClassifyDataset):
         self._model.eval()
         trainer = Trainer(
             model=self._model,
@@ -146,8 +150,22 @@ class ModelContainer(torch.nn.Module):
             tokenizer=self._tokenizer,
             compute_metrics=self.compute_metrics
         )
-        predictions, labels, _ = trainer.predict(data_set)
-        return predictions
+        logits, y_true, _ = trainer.predict(data_set)
+        y_pred = np.argmax(logits, axis=1)
+
+        if isinstance(self._labeler, MultiLabeler):  # here we have integer encoded every label combination
+            decoded_predictions = []
+            for p_sample in y_pred:
+                decoded_predictions.append(self._labeler.binpowset(p_sample))
+            decoded_labels = []
+            y_pred = decoded_predictions
+
+            if y_true is not None:
+                for t_sample in y_true:
+                    decoded_labels.append(self._labeler.binpowset(t_sample))
+                y_true = decoded_labels
+
+        return y_pred, y_true
 
 
 class TokenClassifyModel(ModelContainer):
@@ -268,9 +286,6 @@ class SeqClassifyModel(ModelContainer):
                 decoded_labels.append(self._labeler.binpowset(t_sample))
             y_pred = decoded_predictions
             y_true = decoded_labels
-            labels = self._labeler.source_labels()
-        if isinstance(self._labeler, BinaryLabeler):
-            labels = self._labeler.source_labels()
 
         self._last_eval_metrics = self._metric.compute(references=y_true, predictions=y_pred, labels=labels)
         if self._eval_callback is not None:

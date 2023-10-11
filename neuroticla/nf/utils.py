@@ -40,25 +40,25 @@ def get_all_text_fields() -> List[str]:
     return ['title', 'body']
 
 
-def get_text_fields(arg, input_fields: str) -> List[str]:
+def get_text_fields(input_fields: str) -> List[str]:
     text_fields = get_all_text_fields()
     if input_fields is not None:
         fields = input_fields.split(',')
         if all(item in text_fields for item in fields):
             text_fields = fields
         else:
-            raise ValueError(f'Invalid text fields: [{arg.train_fields}]')
+            raise ValueError(f'Invalid text fields: [{input_fields}]')
     return text_fields
 
 
 def get_train_fields(arg) -> List[str]:
-    return get_text_fields(arg, arg.train_fields)
+    return get_text_fields(arg.train_fields)
 
 
 def get_test_fields(arg) -> List[str]:
     if arg.test_fields is None:
-        return get_text_fields(arg, arg.train_fields)
-    return get_text_fields(arg, arg.test_fields)
+        return get_text_fields(arg.train_fields)
+    return get_text_fields(arg.test_fields)
 
 
 def get_data_path_prefix(arg) -> List[str]:

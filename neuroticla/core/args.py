@@ -192,11 +192,22 @@ class CommonArguments:
         )
 
     @classmethod
-    def train(cls, parser: ArgumentParser):
-        cls.device(parser)
+    def batch_size(cls, parser: ArgumentParser, default: int = 32):
         parser.add_argument(
-            '-b', '--batch', help='Batch size.', type=int, default=32
+            '-b', '--batch', help='Batch size.', type=int, default=default
         )
+
+    @classmethod
+    def max_seq_len(cls, parser: ArgumentParser, default: int = 512):
+        parser.add_argument(
+            '--max_seq_len', help='Max sentence length in sub-word tokens.', type=int, default=default
+        )
+
+    @classmethod
+    def train(cls, parser: ArgumentParser, batch_default: int = 32, max_seq_len_default: int = 512):
+        cls.device(parser)
+        cls.batch_size(parser, batch_default)
+        cls.max_seq_len(parser, max_seq_len_default)
         parser.add_argument(
             '-l', '--learn_rate', help='Learning rate', type=float, default=2e-5
         )
@@ -205,8 +216,6 @@ class CommonArguments:
         )
 
     @classmethod
-    def test(cls, parser: ArgumentParser):
+    def test(cls, parser: ArgumentParser, batch_default: int = 32):
         cls.device(parser)
-        parser.add_argument(
-            '-b', '--batch', help='Batch size.', type=int, default=32
-        )
+        cls.batch_size(parser, batch_default)

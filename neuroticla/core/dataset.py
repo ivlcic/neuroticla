@@ -15,7 +15,7 @@ logger = logging.getLogger('core.dataset')
 
 class ClassifyDataset(Dataset):
     def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, max_seq_len: int,
-                 label_field: Union[str, List[str]] = 'label', text_field: Union[str, List[str]] = 'text'):
+                 label_field: Union[str, List[str], None] = 'label', text_field: Union[str, List[str]] = 'text'):
         self._labeler = labeler
         self._tokenizer = tokenizer
         self._max_seq_len = max_seq_len
@@ -150,4 +150,48 @@ class SeqClassifyDataset(ClassifyDataset):
         """
         item = {key: val[idx].clone().detach() for key, val in self.encodings.items()}
         item['labels'] = torch.tensor(self.labels[idx])
+        return item
+
+
+class SeqEvalDataset(ClassifyDataset):
+
+    def __init__(self, labeler: Labeler, tokenizer: PreTrainedTokenizer, data: pd.DataFrame, max_seq_len: int,
+                 text_fields: Union[str, List[str]] = 'text'):
+        """Encodes the text data and labels
+                """
+        super().__init__(labeler, tokenizer, max_seq_len, None, text_fields)
+
+        # encode the text
+        if isinstance(text_fields, str):
+            text_fields = [text_fields]
+
+        texts = []
+        for i, row in data.iterrows():
+            concatenated_string = '\n'.join([str(row[col]) for col in text_fields])
+            texts.append(concatenated_string)
+        self._len = len(texts)
+        self.encodings: BatchEncoding = tokenizer(
+            texts,
+            padding='max_length',
+            max_length=max_seq_len,
+            truncation=True,
+            return_tensors="pt"
+        )
+
+    def __len__(self):
+        return self._len
+
+    def __getitem__(self, idx):
+        """
+        self.encodings = {
+          'input_ids':[dataset_size, [encoded ids vector]]
+          'attention_mask':[dataset_size, [attention mask - padded tokens]]
+        }
+        so we need to take only the "idx" one
+        item = {
+          'input_ids':[encoded ids vector for idx]
+          'attention_mask':[attention mask - padded tokens for idx]
+        }
+        """
+        item = {key: val[idx].clone().detach() for key, val in self.encodings.items()}
         return item

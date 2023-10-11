@@ -11,7 +11,7 @@ MODULE_DESCRIPTOR = ModuleDescriptor(
         CommandArguments('test', 'Test news framing detection models', multi_action=True),
         CommandArguments('infer', 'Run inference for news-framing detection models', multi_action=True),
         CommandArguments('convert_result', 'Converts json results to CSV/TSV'),
-        CommandArguments('analyze', 'Analyze corpus'),
+        CommandArguments('analyze', 'Analyze corpus', multi_action=True),
         CommandArguments('unittest', 'Internal tests'),
         CommandArguments('slomcor', 'Retrieve Slovenian Migration Corpus')
     ])

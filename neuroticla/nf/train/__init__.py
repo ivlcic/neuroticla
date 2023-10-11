@@ -19,13 +19,10 @@ logger = logging.getLogger('nf.train')
 
 
 def add_args(module_name: str, parser: ArgumentParser) -> None:
-    CommonArguments.train(parser)
+    CommonArguments.train(parser, 24, 512)
     CommonArguments.split_data_dir(module_name, parser, ('-i', '--data_in_dir'))
     CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
-    parser.add_argument(
-        '--max_seq_len', help='Max sub-word tokens length.', type=int, default=512
-    )
     parser.add_argument(
         '--tqdm', help='Enable TDQM.', action='store_true', default=False
     )
