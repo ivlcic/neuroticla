@@ -352,5 +352,14 @@ Synthetic baseline:
 ### Inference Result Analysis
 ```
 ./nf analyze predicted result/nf/slomcor_manual_0.k10.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec.predictions.cvs
+
 ./nf analyze predicted result/nf/slomcor_middle_east.kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec.predictions.cvs
+./nf analyze predicted result/nf/slomcor_ukraine.kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec.predictions.cvs
+./nf analyze predicted result/nf/slomcor_middle_east.kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec.predictions.cvs
+./nf analyze predicted result/nf/slomcor_ukraine.kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec.predictions.cvs
+
+./nf analyze predicted result/nf/slomcor_middle_east.kt.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec.predictions.cvs
+./nf analyze predicted result/nf/slomcor_ukraine.kt.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec.predictions.cvs
+./nf analyze predicted result/nf/slomcor_middle_east.kt.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec.predictions.cvs
+./nf analyze predicted result/nf/slomcor_ukraine.kt.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec.predictions.cvs
 ```
