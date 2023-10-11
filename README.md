@@ -317,13 +317,15 @@ We can turn on k-fold cross validation with additional fields for training:
 ./nf train binrel -e 20 -b 24 -p mcbert -k 10 -f title,body aussda_manual &>result/nf/k10-binrel-micro1-tb-mcbert.log
 ```
 
-We can select only specified subset of labels to train with average macro :  
+We can select only specified subset of labels to train with an average macro F1 score for best model training selection:  
 (subset of labels: `-u eco,sec`)
 ```
-./nf train lpset --tqdm -e 20 -b 24 -u eco,sec -f title,body -p xlmrb aussda_manual
+./nf train lpset --tqdm -e 20 -b 24 -u eco,sec -f title,body -m macro-1 -p xlmrb aussda_manual
 ```
 
+
 ### Inference
+
 Binary relevance:
 ```
 ./nf infer lpset -n kt.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
@@ -331,6 +333,7 @@ Binary relevance:
 ./nf infer lpset -n k10.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
 ./nf infer lpset -n k10.lpset.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
 ```
+
 Binary relevance:
 ```
 ./nf infer binrel -n kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
@@ -339,53 +342,15 @@ Binary relevance:
 ./nf infer binrel -n k10.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec data/nf/split/slomcor/slomcor_manual_0.csv
 ```
 
-### Test
-TODO ...  
-Epochs and pretrained model names are used just for model name computation.
+Synthetic baseline:
 ```
-# the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_manual.f-b aussda_manual
-# so it is shorter to construct model name from training params 
-./nf test binrel --tqdm -e 20 -b 24 -p mcbert aussda_manual
-./nf test binrel --tqdm -e 20 -b 24 -p xlmrb aussda_manual
-./nf test binrel --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual
-./nf test binrel --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -p mcbert aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -p xlmrb aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -m micro-1 -p mcbert aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -m micro-1 -p xlmrb aussda_manual
-./nf test binrel --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
-./nf test binrel --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
-./nf test binrel --tqdm -e 20 -b 24 -f title,body -m micro-1 -p mcbert aussda_manual
-./nf test binrel --tqdm -e 20 -b 24 -f title,body -m micro-1 -p xlmrb aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -f title,body -p mcbert aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -f title,body -p xlmrb aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -f title,body -m micro-1 -p mcbert aussda_manual
-./nf test lpset --tqdm -e 20 -b 24 -f title,body -m micro-1 -p xlmrb aussda_manual
-
-# do baseline
-./nf test majority0 aussda_manual
-./nf test majority_labeled aussda_manual
-./nf test random aussda_manual
-
-# finnaly convert to cvs
-./nf convert_result test_set.results_all.json
-
-
-# the same would be: ./nf test binrel --tqdm -b 24 -n mcbert.e20.b24.l2e-05.aussda_short.f-b aussda_short
-./nf test binrel --tqdm -e 20 -b 24 -p mcbert aussda_short
-./nf test binrel --tqdm -e 20 -b 24 -p xlmrb aussda_short
-./nf test lpset --tqdm -e 20 -b 24 -p mcbert aussda_short
-./nf test lpset --tqdm -e 20 -b 24 -p xlmrb aussda_short
-
-./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_short
-./nf test binrel --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
-./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p mcbert aussda_short
-./nf test lpset --tqdm -e 20 -b 24 -u eco,lab,wel,sec -p xlmrb aussda_short
-./nf test majority -u eco,lab,wel,sec aussda_short
-./nf test random -u eco,lab,wel,sec aussda_short
+./nf infer majority_0 aussda_manual
+./nf infer majority_l aussda_manual
+./nf infer random aussda_manual
 ```
-To test on a
 
-Todo 
-- convert test results json to tsv/csv
-- infer xmodel on other corpora
+### Inference Result Analysis
+```
+./nf analyze predicted result/nf/slomcor_manual_0.k10.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-b.l-eco_lab_wel_sec.predictions.cvs
+./nf analyze predicted result/nf/slomcor_middle_east.kt.binrel.xlmrb.e20.b24.l2e-05.m-micro-1.aussda_manual.f-t_b.l-eco_lab_wel_sec.predictions.cvs
+```

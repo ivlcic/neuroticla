@@ -1,4 +1,5 @@
-from .common import _get_train_params, _get_inference_data, _infer, _get_training_args, _write_results
+from .common import (_get_train_params, _get_inference_data, _infer, _get_training_args,
+                     _write_results, _get_baseline_params)
 from ...core.labels import BinaryLabeler, MultiLabeler
 from ...core.results import ResultsCollector
 from ...core.trans import SeqClassifyModel
@@ -9,7 +10,7 @@ logger = logging.getLogger('nf.infer')
 
 def add_args(module_name: str, parser: ArgumentParser) -> None:
     CommonArguments.test(parser, 24)
-    CommonArguments.raw_data_dir(module_name, parser, ('-i', '--data_in_dir'))
+    CommonArguments.split_data_dir(module_name, parser, ('-i', '--data_in_dir'))
     CommonArguments.result_dir(module_name, parser, ('-m', '--model_dir'))
     CommonArguments.result_dir(module_name, parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
@@ -27,6 +28,53 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
     )
     parser.add_argument('input_file', type=str, default=None,
                         help='File prefix or path prefix to use for inference')
+
+
+def infer_majority_0(arg) -> int:
+    labels, data, _ = _get_baseline_params(arg)
+
+    model_name = f'majority-0.{arg.input_file}{get_labels_str(labels)}'
+    logger.info('Started model [%s] inference for labels %s.', model_name, labels)
+    collector = ResultsCollector()
+    for label in labels:
+        y_pred = [0] * data.shape[0]  # all zeros are the majority class / label set
+        data['p_' + label] = y_pred
+        collector.collect(None, data[label].tolist(), y_pred)
+    _write_results(arg, model_name, data, collector.get_all_true(), collector.get_all_pred(), labels)
+    return 0
+
+
+def infer_majority_l(arg) -> int:
+    labels, data, _ = _get_baseline_params(arg)
+    model_name = f'majority-l.{arg.input_file}{get_labels_str(labels)}'
+    logger.info(
+        'Started majority non-zero label set model [%s] inference for labels %s.', model_name, labels
+    )
+    collector = ResultsCollector()
+    for label in labels:
+        if label == 'sec':
+            y_pred = [1] * data.shape[0]  # security is of majority class / label
+        else:
+            y_pred = [0] * data.shape[0]  # all other are zeros
+        data['p_' + label] = y_pred
+        collector.collect(None, data[label].tolist(), y_pred)
+
+    _write_results(arg, model_name, data, collector.get_all_true(), collector.get_all_pred(), labels)
+    return 0
+
+
+def infer_random(arg) -> int:
+    labels, data, random_data = _get_baseline_params(arg)
+    model_name = f'random.{arg.input_file}{get_labels_str(labels)}'
+    logger.info('Started random model [%s] inference for labels %s.', model_name, labels)
+    collector = ResultsCollector()
+    for label in labels:
+        y_pred = random_data[label].values.tolist()
+        data['p_' + label] = y_pred
+        collector.collect(None, data[label].tolist(), y_pred)
+
+    _write_results(arg, model_name, data, collector.get_all_true(), collector.get_all_pred(), labels)
+    return 0
 
 
 def infer_binrel(arg) -> int:

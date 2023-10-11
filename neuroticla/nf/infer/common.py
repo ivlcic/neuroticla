@@ -1,14 +1,17 @@
 import os
 import logging
 import json
+import random
 import pandas as pd
 
 from typing import Union, List, Any, Tuple, Dict
 from transformers import TrainingArguments
 
+from ..utils import get_all_labels, get_data_path_prefix
 from ...core.dataset import SeqClassifyDataset, SeqEvalDataset
 from ...core.eval import MultilabelMetrics
 from ...core.results import ResultWriter
+from ...core.split import DataSplit
 from ...core.trans import SeqClassifyModel
 
 logger = logging.getLogger('nf.infer')
@@ -28,6 +31,30 @@ def _get_train_params(arg) -> Tuple[Dict[str, Any], str, str]:
     model_dir = os.path.dirname(model_train_file)
     model_name = os.path.basename(model_dir)
     return train_params, model_dir, model_name
+
+
+def _get_baseline_params(arg) -> Tuple[List[str], pd.DataFrame, pd.DataFrame]:
+    labels = get_all_labels(arg.input_file)
+    train_data, eval_data, test_data = DataSplit.load([os.path.join(arg.data_in_dir, arg.input_file)])
+    data = pd.concat([train_data, eval_data, test_data], ignore_index=True)
+
+    # Create a new column to store the label combinations
+    data['comb'] = data[labels].apply(lambda row: ''.join(row.astype(str)), axis=1)
+    # Calculate frequencies for each string combination
+    combination_freq = data['comb'].value_counts().reset_index()
+    combination_freq.columns = ['comb', 'freq']
+
+    combos = pd.DataFrame({
+        'comb': random.choices(
+            combination_freq['comb'].values.tolist(),
+            combination_freq['freq'].values.tolist(),
+            k=data.shape[0]
+        )
+    })
+    split_combos = combos['comb'].apply(lambda x: pd.Series([int(i) for i in list(x)]))
+    split_combos.columns = labels
+
+    return labels, data, split_combos
 
 
 def _get_training_args(arg, model_path: str) -> TrainingArguments:
