@@ -1,3 +1,5 @@
+import numpy as np
+
 from .common import (_get_train_params, _get_inference_data, _infer, _get_training_args,
                      _write_results, _get_baseline_params)
 from ...core.labels import BinaryLabeler, MultiLabeler
@@ -23,7 +25,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
     )
     text_fields = ','.join(get_all_text_fields())
     parser.add_argument(
-        '-f', '--fields', type=str, default='body', required=False,
+        '-f', '--fields', type=str, default=None, required=False,
         help='Text fields to use for inference: ' + text_fields + ')',
     )
     parser.add_argument('input_file', type=str, default=None,
@@ -80,8 +82,12 @@ def infer_random(arg) -> int:
 def infer_binrel(arg) -> int:
     train_params, model_dir, model_name = _get_train_params(arg)
 
-    labels = get_all_labels(train_params['corpora'])
-    text_fields = get_text_fields(arg.fields)
+    labels = train_params['labels'].split(',')
+    if arg.fields is not None:
+        text_fields = get_text_fields(arg.fields)
+    else:
+        text_fields = train_params['train_fields'].split(',')
+
     logger.info(
         'Started model %s inference for labels %s and text fields %s.',
         train_params['name'], labels, text_fields
@@ -116,8 +122,12 @@ def infer_binrel(arg) -> int:
 def infer_lpset(arg) -> int:
     train_params, model_dir, model_name = _get_train_params(arg)
 
-    labels = get_all_labels(train_params['corpora'])
-    text_fields = get_text_fields(arg.fields)
+    labels = train_params['labels'].split(',')
+    if arg.fields is not None:
+        text_fields = get_text_fields(arg.fields)
+    else:
+        text_fields = train_params['train_fields'].split(',')
+
     logger.info(
         'Started model %s inference for labels %s and text fields %s.',
         train_params['name'], labels, text_fields
@@ -131,6 +141,9 @@ def infer_lpset(arg) -> int:
     predictions, true_values = _infer(
         arg, mc, _get_training_args(arg, model_dir), data, text_fields
     )
+    y_pred = np.transpose(predictions)
+    for idx, label in enumerate(labels):
+        data['p_' + label] = y_pred[idx]
 
     _write_results(arg, model_name, data, true_values, predictions, labels)
     return 0
