@@ -202,3 +202,11 @@ def unittest_pandas(arg) -> int:
     return 0
 
 
+def unittest_chi2(arg) -> int:
+    from scipy.stats import chi2_contingency
+    chi2, p, _, _ = chi2_contingency([[1161, 718], [870, 1272], [950, 1183], [1908, 1797]])
+    print(f'chi2 [{chi2}], p[{p:.6f}]')
+    chi2, p, _, _ = chi2_contingency([[730, 718], [870, 883], [950, 953], [1908, 1808]])
+    print(f'chi2 [{chi2}], p[{p:.6f}]')
+
+

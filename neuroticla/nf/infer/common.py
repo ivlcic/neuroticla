@@ -73,10 +73,8 @@ def _get_inference_data(arg, text_fields):
     if not os.path.exists(input_file):
         raise ValueError(f'Missing input file [{input_file}]')
 
-    data: pd.DataFrame = pd.read_csv(
-        input_file,
-        encoding='utf-8',
-        # nrows=128
+    data: pd.DataFrame = DataSplit.read_csv(
+        input_file
     )
     for text_field in text_fields:
         if text_field not in data:

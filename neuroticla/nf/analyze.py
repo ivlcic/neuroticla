@@ -1,19 +1,20 @@
 import os
 import logging
+import numpy as np
 import pandas as pd
 
 from argparse import ArgumentParser
 
 from .prep import DataFilter, AussdaLongDataFilter, AussdaShortDataFilter, AussdaManualDataFilter, SlomcorDataFilter
 from .. import CommonArguments
+from ..core.split import DataSplit
 
 logger = logging.getLogger('nf.analyze')
 
 
 def get_data_filter(input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> DataFilter:
-    df: pd.DataFrame = pd.read_csv(
+    df: pd.DataFrame = DataSplit.read_csv(
         input_path,
-        encoding='utf-8',
         nrows=10
     )
     logger.info("Got CVS columns after examine: %s", df.columns)
@@ -56,6 +57,12 @@ def _analyze(data, label_columns):
     ).reset_index()
     print(grouped_df.to_csv(sep='\t', index=None))
 
+    grouped_df = data.agg(**agg_args).drop(['count'])
+    grouped_df = pd.DataFrame([np.diag(grouped_df)], columns=grouped_df.columns)
+    grouped_df.insert(0, 'sum', grouped_df.sum(axis=1))
+    grouped_df.insert(0, 'count', data.shape[0])
+    print(grouped_df.to_csv(sep='\t', index=False))
+
     print(label_columns)
     # Create a new column to store the label combinations
     data['comb'] = data[label_columns].apply(lambda row: ''.join(row.astype(str)), axis=1)
@@ -64,7 +71,8 @@ def _analyze(data, label_columns):
     combination_freq.columns = ['comb', 'freq']
     # Calculate percentages
     combination_freq['rel_freq'] = (combination_freq['freq'] / data.shape[0])
-    print(combination_freq.to_csv(sep='\t', index=None))
+    combination_freq = combination_freq.sort_values(by='comb').transpose()
+    print(combination_freq.to_csv(sep='\t', index=False))
 
 
 def analyze_raw(arg) -> int:
@@ -92,11 +100,14 @@ def analyze_predicted(arg) -> int:
         input_file = arg.corpora
     if not os.path.exists(input_file):
         raise ValueError(f'Missing input file [{input_file}]')
-    df: pd.DataFrame = pd.read_csv(
+    df: pd.DataFrame = DataSplit.read_csv(
         input_file,
-        encoding='utf-8',
         nrows=arg.num_rows
     )
     cols_with_prefix = [col for col in df.columns if col.startswith('p_')]
     _analyze(df, cols_with_prefix)
+    cols_without_prefix = [col[2:] for col in cols_with_prefix]
+    all_cols_exist = all(col in df.columns for col in cols_without_prefix)
+    if all_cols_exist:
+        _analyze(df, cols_without_prefix)
     return 0

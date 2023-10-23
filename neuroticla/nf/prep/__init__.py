@@ -5,6 +5,7 @@ import pandas as pd
 from argparse import ArgumentParser
 
 from ...core.args import CommonArguments
+from ...core.split import DataSplit
 from ...utils.zip import AESZipFile, ZIP_BZIP2, WZ_AES
 from .filter import DataFilter
 from .aussda import AussdaLongDataFilter, AussdaShortDataFilter, AussdaManualDataFilter
@@ -14,9 +15,8 @@ logger = logging.getLogger('nf.prep')
 
 
 def get_data_filter(input_path: str, target_dir_path: str, base_name: str, num_rows: int) -> DataFilter:
-    df: pd.DataFrame = pd.read_csv(
+    df: pd.DataFrame = DataSplit.read_csv(
         input_path,
-        encoding='utf-8',
         nrows=10
     )
     logger.info("Got CVS columns after examine: %s", df.columns)

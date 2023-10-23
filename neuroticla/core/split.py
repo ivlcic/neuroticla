@@ -1,4 +1,5 @@
 import os
+import ast
 import logging
 import numpy as np
 import pandas as pd
@@ -13,6 +14,14 @@ logger = logging.getLogger('core.split')
 class DataSplit:
 
     @classmethod
+    def read_csv(cls, file_name, nrows: [int|None] = None) -> pd.DataFrame:
+        df = pd.read_csv(file_name, nrows=nrows, encoding='utf-8')
+        cols_with_prefix = [col for col in df.columns if col.startswith('embed_')]
+        for c in cols_with_prefix:
+            df[c] = df[c].apply(ast.literal_eval)
+        return df
+
+    @classmethod
     def split(cls, data_split: str, base_name: str, file_set: List[str],
               random_state: int = None) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame):
         ds = [int(x) for x in data_split.split(':')]
@@ -24,9 +33,10 @@ class DataSplit:
 
         frames: List[pd.DataFrame] = []
         for f in file_set:
-            df: pd.DataFrame = pd.read_csv(f, encoding='utf-8')
+            df: pd.DataFrame = DataSplit.read_csv(f)
             frames.append(df)
         data: pd.DataFrame = pd.concat(frames)
+
         if random_state is not None:
             data = data.sample(frac=1, random_state=random_state)
             logger.info("Done reproducible data shuffle with random state: %s.", random_state)
@@ -74,13 +84,13 @@ class DataSplit:
             else:
                 delim = '.'
             training_sets.append(
-                pd.read_csv(path_prefix + delim + 'train.csv', encoding='utf-8')
+                DataSplit.read_csv(path_prefix + delim + 'train.csv')
             )
             evaluation_sets.append(
-                pd.read_csv(path_prefix + delim + 'eval.csv', encoding='utf-8')
+                DataSplit.read_csv(path_prefix + delim + 'eval.csv')
             )
             test_sets.append(
-                pd.read_csv(path_prefix + delim + 'test.csv', encoding='utf-8')
+                DataSplit.read_csv(path_prefix + delim + 'test.csv')
             )
             logger.info("Loaded corpus [%s]", path_prefix)
 

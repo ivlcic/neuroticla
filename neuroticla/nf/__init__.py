@@ -7,6 +7,7 @@ MODULE_DESCRIPTOR = ModuleDescriptor(
     ModuleArguments([
         CommandArguments('prep', 'Prepares the data'),
         CommandArguments('split', 'Splits the data'),
+        CommandArguments('embed', 'Embeds the data'),
         CommandArguments('train', 'Train for the news-framing detection', multi_action=True),
         CommandArguments('infer', 'Run inference for news-framing detection models', multi_action=True),
         CommandArguments('analyze', 'Analyze corpus', multi_action=True),
