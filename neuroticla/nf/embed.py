@@ -39,7 +39,7 @@ def openai_embed(data: pd.DataFrame, text_fields: Union[str, List[str]] = 'body'
         )
         text_len += len(concatenated_string)
         token_len += len(tokens)
-        logger.info('Loaded %s article OpenAI embedding.', row['id'])
+        logger.info('Loaded %s article OpenAI embedding.', i)
         embeddings.append(embedding["data"][0]["embedding"])
     data['embed_oai_ada2'] = embeddings
     logger.info(
@@ -60,7 +60,6 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         '-p', '--password', type=str, required=True, help='Zip file password'
     )
     parser.add_argument('--num_rows', type=int, help='Numer of rows to use', default=None)
-    parser.add_argument('--openai', type=int, help='Numer of rows to use', default=None)
     parser.add_argument(
         '--openai', help="Do OpenAI ada-002 model embeddings", action='store_true'
     )
@@ -81,6 +80,7 @@ def main(arg) -> int:
         )
         success = []
         for f in files:
+            logger.info('Loaded file %s.', f)
             data = DataSplit.read_csv(f, nrows=arg.num_rows)
             if arg.openai:
                 openai_embed(data, ['title', 'body'])
