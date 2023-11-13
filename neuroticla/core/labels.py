@@ -3,6 +3,8 @@ import numpy
 
 from typing import Dict, List, Union
 
+import pandas as pd
+
 
 class Labeler:
 
@@ -113,6 +115,13 @@ class MultiLabeler(Labeler):
             if src_label in labels:
                 target += src_label
         return self._label_to_id[target]
+
+    def encode_columns(self, data: pd.DataFrame) -> List[int]:
+        encoded = []
+        for index, row in data.iterrows():
+            label_list = [l for l in self._source_labels if row[l] == 1]
+            encoded.append(self.encode(label_list))
+        return encoded
 
     def for_binary_eval(self) -> List[str]:
         result = []

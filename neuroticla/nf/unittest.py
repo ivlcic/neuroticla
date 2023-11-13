@@ -8,6 +8,7 @@ from sklearn import metrics
 
 from ..core.labels import MultiLabeler
 from ..core.eval import ClassificationMetrics
+from ..core.split import DataSplit
 
 logger = logging.getLogger('nf.test')
 
@@ -208,5 +209,14 @@ def unittest_chi2(arg) -> int:
     print(f'chi2 [{chi2}], p[{p:.6f}]')
     chi2, p, _, _ = chi2_contingency([[730, 718], [870, 883], [950, 953], [1908, 1808]])
     print(f'chi2 [{chi2}], p[{p:.6f}]')
+    return 0
 
 
+def unittest_search(arg) -> int:
+    df = DataSplit.read_csv('/home/nikola/projects/neuroticla/data/nf/split/aussda/aussda_manual.csv')
+    row = df[df['id'] == 1046038]
+    selected_columns = df.loc[df['id'] == 1046038, ['id', 'title', 'lead', 'body', 'eco', 'lab', 'wel', 'sec']]
+    print('---------------------------------------------')
+    print(selected_columns.to_dict())
+    print('---------------------------------------------')
+    return 0

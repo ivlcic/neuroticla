@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 import logging.config
 import os
-from typing import Type, TypeVar
+from typing import TypeVar
 
 from .args import ModuleArguments, ArgumentParser
 

@@ -173,11 +173,15 @@ def _fold_keep_model(arg, fold: int, best: Dict[str, Any], curr: Dict[str, Any])
         return best, True
 
 
-def _write_results(arg, labels, result_path, result, df: pd.DataFrame, fold: Union[int, str] = 't'):
+def _write_results(arg, labels, result_path, result, df: pd.DataFrame, fold: Union[int, str] = 't',
+                   drop_fields: Union[List[str], None] = None):
     # write predictions to model or model collection dir file kFOLD.predictions.csv
+    if drop_fields is None:
+        drop_fields = ['body', 'lead', 'embed_oai_ada2']
+
     result_writer = ResultWriter()
     result_writer.write_predictions(
-        result_path, f'k{fold}.predictions', df, ['body', 'lead']
+        result_path, f'k{fold}.predictions', df, drop_fields
     )
     # remove predictions from the dataframe
     _clear_predictions(labels, df)

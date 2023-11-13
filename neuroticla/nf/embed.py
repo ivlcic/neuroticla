@@ -3,7 +3,7 @@ import logging
 import openai
 import pandas as pd
 
-from typing import List, Union, Iterable
+from typing import List, Union
 from argparse import ArgumentParser
 
 from ..core.args import CommonArguments

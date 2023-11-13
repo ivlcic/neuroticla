@@ -25,5 +25,5 @@ DEFAULT_LENGTH = 2048
 DEFAULT_MODEL = 'text-davinci-003'
 DEFAULT_S_REPLACE = '<document>'
 
-openai.organization = os.environ['OPENAI_ORG']
-openai.api_key = os.environ['OPENAI_API_KEY']
+openai.organization = os.environ.get("OPENAI_ORG")
+openai.api_key = os.environ.get("OPENAI_API_KEY")

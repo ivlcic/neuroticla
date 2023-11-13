@@ -40,6 +40,10 @@ def get_all_text_fields() -> List[str]:
     return ['title', 'body']
 
 
+def get_all_embeddings_fields() -> List[str]:
+    return ['embed_oai_ada2']
+
+
 def get_text_fields(input_fields: str) -> List[str]:
     text_fields = get_all_text_fields()
     if input_fields is not None:
@@ -73,32 +77,48 @@ def get_labels_str(labels: List[str]) -> str:
     return l_str
 
 
-def compute_model_name(arg, pt_method: str) -> str:
+def compute_model_name(arg, pt_method: str, nn: bool = True) -> str:
     if arg.model_name is not None:
         return arg.model_name
     l_str = get_labels_str(get_labels(arg))
     f_str = ''
-    train_fields = get_train_fields(arg)
+    if nn:
+        train_fields = get_train_fields(arg)
+    else:
+        train_fields = arg.train_fields
+
     if train_fields is not None:
-        f_str = '.f-' + '_'.join([text_field[0] for text_field in train_fields if text_field])
-    m = (f'{pt_method}.{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}'
-         f'.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}')
+        if isinstance(train_fields, str):
+            f_str = '.f-' + train_fields
+        else:
+            f_str = '.f-' + '_'.join([text_field[0] for text_field in train_fields if text_field])
+
+    if nn:
+        m = (f'{pt_method}.{arg.pretrained_model}.e{arg.epochs}.b{arg.batch}'
+             f'.l{arg.learn_rate}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}')
+    else:
+        m = f'{pt_method}.{arg.algorithm}.m-{arg.metric}.{arg.corpora}{f_str}{l_str}'
     return m
 
 
-def write_model_params(out_dir: str, arg, pt_method: str) -> Dict[str, str]:
+def write_model_params(out_dir: str, arg, pt_method: str, nn: bool = True) -> Dict[str, str]:
     params = {}
     params['pt_method'] = pt_method
-    params['name'] = compute_model_name(arg, pt_method)
+    params['name'] = compute_model_name(arg, pt_method, nn)
     params['labels'] = ','.join(get_labels(arg))
-    params['train_fields'] = ','.join(get_train_fields(arg))
-    params['pretrained_model'] = arg.pretrained_model
-    params['epochs'] = arg.epochs
-    params['batch'] = arg.batch
-    params['learn_rate'] = arg.learn_rate
     params['metric'] = arg.metric
     params['corpora'] = arg.corpora
-    params['max_seq_len'] = arg.max_seq_len
+    if nn:
+        params['train_fields'] = ','.join(get_train_fields(arg))
+        params['pretrained_model'] = arg.pretrained_model
+        params['epochs'] = arg.epochs
+        params['batch'] = arg.batch
+        params['learn_rate'] = arg.learn_rate
+        params['max_seq_len'] = arg.max_seq_len
+    else:
+        params['train_fields'] = arg.train_fields
+        params['algorithm'] = arg.algorithm
+
     with open(os.path.join(out_dir, 'train_params.json'), 'wt') as fp:
         json.dump(params, fp, indent=2)
     return params

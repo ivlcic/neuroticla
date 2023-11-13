@@ -5,7 +5,7 @@ import pandas as pd
 from argparse import ArgumentParser
 from sklearn.model_selection import KFold
 
-from neuroticla import CommonArguments
+from ...core.args import CommonArguments
 from ...core.eval import MultilabelMetrics
 from ...core.labels import BinaryLabeler, MultiLabeler
 from ...core.results import ResultsCollector
@@ -13,7 +13,7 @@ from ...core.split import DataSplit
 from ...core.trans import ModelContainer
 from .common import _prep, _train, _test, _save_predictions, _write_results, _fold_keep_model, \
     _replace_binrel_models_tmp_dirs, _remove_binrel_models_tmp_dirs, _remove_checkpoint_dir
-from neuroticla.nf.utils import get_all_labels, get_all_text_fields, get_data_path_prefix, compute_model_path
+from ..utils import get_all_labels, get_all_text_fields, get_data_path_prefix, compute_model_path
 
 logger = logging.getLogger('nf.train')
 
