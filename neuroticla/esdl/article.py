@@ -86,13 +86,13 @@ class Article:
     def to_cache(self, data_path):
         if not os.path.exists(data_path):
             os.makedirs(data_path)
-        with open(os.path.join('data', self.uuid + '.json'), 'w', encoding='utf8') as json_file:
+        with open(os.path.join(data_path, self.uuid + '.json'), 'w', encoding='utf8') as json_file:
             json.dump(self.data, json_file, indent='  ', ensure_ascii=False)
 
     def from_cache(self, data_path) -> bool:
         if not os.path.exists(data_path):
             return False
-        fname = os.path.join('data', self.uuid + '.json')
+        fname = os.path.join(data_path, self.uuid + '.json')
         if not os.path.exists(fname):
             return False
         with open(fname, encoding='utf8') as file:

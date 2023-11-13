@@ -1,0 +1,10 @@
+from ..core import ModuleDescriptor
+from ..core.args import ModuleArguments, CommandArguments
+
+MODULE_DESCRIPTOR = ModuleDescriptor(
+    'play',
+    'Playground module',
+    ModuleArguments([
+        CommandArguments('cluster', 'Cluster compare', multi_action=True)
+    ])
+)
