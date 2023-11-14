@@ -32,7 +32,8 @@ def e5_embed(articles: List[Article], embed_field_name: str, cache: Union[str, N
                 continue
         logger.debug('Loading %s article E5 embedding ...', a)
         batch_dict = tokenizer(
-            [a.title + ' ' + a.body], max_length=max_len, padding=True, truncation=True, return_tensors='pt'
+            ['passage: ' + a.title + ' ' + a.body], max_length=max_len,
+            padding=True, truncation=True, return_tensors='pt'
         )
         outputs = model(**batch_dict)
         embeddings = _average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])

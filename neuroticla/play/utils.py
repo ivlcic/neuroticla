@@ -1,14 +1,15 @@
+import sys
 import networkx as nx
 import numpy as np
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 from sklearn.metrics.pairwise import cosine_similarity
 from ..esdl.article import Article
 
 
 def cluster_louvain(articles: List[Article], embed_field_name: str, similarity_threshold: float = 0.84):
     embeddings = []
-    [embeddings.append(x.data[embed_field_name]) for x in articles]
+    [embeddings.append(x.data[embed_field_name]) for x in articles if embed_field_name in x.data]
     embeddings = np.array(embeddings)
     labels = [0] * len(embeddings)
     x = cosine_similarity(embeddings, embeddings)
@@ -35,16 +36,17 @@ def cluster_louvain(articles: List[Article], embed_field_name: str, similarity_t
     return consistent
 
 
-def cluster_print(clusters: Dict[int, List[Article]]):
-    for k in clusters.keys():
-        articles: List[Article] = clusters[k]
-        print(f"Cluster [{articles[0].title}]")
-        for x, a in enumerate(articles):
-            if x == len(articles) - 1:
-                print(f'\t+---{a}')
-                print('')
-            else:
-                print(f'\t|---{a}')
+def cluster_print(clusters: Dict[int, List[Article]], file_name: Optional[str] = None):
+    with open(file_name, 'w') if file_name else sys.stdout as output:
+        for k in clusters.keys():
+            articles: List[Article] = clusters[k]
+            print(f"Cluster [{articles[0].title}]", file=output)
+            for x, a in enumerate(articles):
+                if x == len(articles) - 1:
+                    print(f'\t+---{a}', file=output)
+                    print('', file=output)
+                else:
+                    print(f'\t|---{a}', file=output)
 
 
 def compare_clusterings(a_first, a_second, cf_name='First Clustering', cs_name='Second Clustering'):

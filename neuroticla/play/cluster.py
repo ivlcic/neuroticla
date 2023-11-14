@@ -39,9 +39,17 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
 
 
 def cluster_compare(arg) -> int:
-    arg.tmp_dir = os.path.join(arg.tmp_dir, 'cluster_articles')
-    if not os.path.exists(arg.tmp_dir):
-        os.makedirs(arg.tmp_dir)
+    a_dir = os.path.join(arg.tmp_dir, 'cluster_articles')
+    if not os.path.exists(a_dir):
+        os.makedirs(a_dir)
+
+    cmap = {
+        'ccfe00b9-d397-4e85-8310-1a2278ecb73f': 'PORSCHE_SLOVENIJA',
+        'a65c7372-9fbe-410c-93d7-4613d26488e7': 'DRŽAVNI_ZBOR',
+        '9fb98b28-6e82-4e30-8d36-7e3e9e09a9c0': 'NLB',
+        '7fd935a6-a1f5-42d1-8b5f-048dd54c07d1': 'NLB_GROUP',
+        '011afa08-1b10-48d4-b0ea-cc05d8f7e2a9': 'CANKARJEV_DOM'
+    }
 
     requests = Elastika()
     requests.filter_customer(arg.customer)
@@ -50,28 +58,26 @@ def cluster_compare(arg) -> int:
 
     articles: List[Article] = requests.gets(arg.start_date, arg.end_date)
 
-    openai_embed(articles, 'oai_ada_002', arg.tmp_dir)
-    e5_embed(articles, 'efed_e5', arg.tmp_dir)
-    e5_embed(articles, 'e5', arg.tmp_dir)
+    openai_embed(articles, 'oai_ada_002', a_dir)
+    # e5_embed(articles, 'efed_e5', a_dir)
+    e5_embed(articles, 'e5', None)
+
+    if arg.customer in cmap.keys():
+        arg.customer = cmap[arg.customer]
 
     oai_l_clusters = cluster_louvain(articles, 'oai_ada_002', 0.92)
-    fe5_l_clusters = cluster_louvain(articles, 'efed_e5', 0.95)
-    e5_l_clusters = cluster_louvain(articles, 'e5', 0.91)
+    e5_l_clusters = cluster_louvain(articles, 'e5', 0.92)
     ttnx_l_clusters = cluster_louvain(articles, 'vector_768___textonic_v1', 0.79)
-
+    f_prefix = arg.customer + '_' + arg.start_date + '_' + arg.end_date
     print('')
     print('========================== OpenAI ========================== ')
-    cluster_print(oai_l_clusters)
-
-    print('')
-    print('========================= Feder E5 ========================= ')
-    cluster_print(fe5_l_clusters)
+    cluster_print(oai_l_clusters, os.path.join(arg.tmp_dir, 'OpenAI-' + f_prefix + '.txt'))
 
     print('')
     print('==========================   E5   ========================== ')
-    cluster_print(e5_l_clusters)
+    cluster_print(e5_l_clusters, os.path.join(arg.tmp_dir, 'E5-' + f_prefix + '.txt'))
 
     print('')
     print('==========================   Textonic   ========================== ')
-    cluster_print(ttnx_l_clusters)
+    cluster_print(ttnx_l_clusters, os.path.join(arg.tmp_dir, 'Textonic-' + f_prefix + '.txt'))
     return 0
