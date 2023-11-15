@@ -51,6 +51,7 @@ def cluster_compare(arg) -> int:
     }
 
     requests = Elastika()
+    requests.limit(1000)
     requests.filter_customer(arg.customer)
     if arg.country is not None:
         requests.filter_country(arg.country)
