@@ -29,8 +29,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         default=next_day.astimezone(timezone.utc).isoformat()
     )
     parser.add_argument(
-        '-c', '--country', help='Articles selection country.', type=str,
-        default='SI'
+        '-c', '--country', help='Articles selection country.', type=str
     )
     parser.add_argument(
         '-u', '--customer', help='Articles selection customer.', type=str,
@@ -44,16 +43,17 @@ def cluster_compare(arg) -> int:
         os.makedirs(a_dir)
 
     cmap = {
-        'ccfe00b9-d397-4e85-8310-1a2278ecb73f': 'PORSCHE_SLOVENIJA',
-        'a65c7372-9fbe-410c-93d7-4613d26488e7': 'DRŽAVNI_ZBOR',
-        '9fb98b28-6e82-4e30-8d36-7e3e9e09a9c0': 'NLB',
-        '7fd935a6-a1f5-42d1-8b5f-048dd54c07d1': 'NLB_GROUP',
-        '011afa08-1b10-48d4-b0ea-cc05d8f7e2a9': 'CANKARJEV_DOM'
+        'ccfe00b9-d397-4e85-8310-1a2278ecb73f': 'PS',
+        'a65c7372-9fbe-410c-93d7-4613d26488e7': 'DZ',
+        '9fb98b28-6e82-4e30-8d36-7e3e9e09a9c0': 'NB',
+        '7fd935a6-a1f5-42d1-8b5f-048dd54c07d1': 'NG',
+        '011afa08-1b10-48d4-b0ea-cc05d8f7e2a9': 'CD'
     }
 
     requests = Elastika()
     requests.filter_customer(arg.customer)
-    requests.filter_country(arg.country)
+    if arg.country is not None:
+        requests.filter_country(arg.country)
     requests.field('vector_768___textonic_v1')
 
     articles: List[Article] = requests.gets(arg.start_date, arg.end_date)
