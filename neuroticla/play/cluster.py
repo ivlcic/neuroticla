@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 from typing import List, Dict
 
-from .e5 import e5_embed
+from .e5 import e5_embed, e5_embed_text
 from .utils import compare_clusterings, cluster_louvain, cluster_print
 from .. import CommonArguments
 from ..esdl import Elastika
@@ -61,7 +61,7 @@ def cluster_compare(arg) -> int:
 
     openai_embed(articles, 'oai_ada_002', a_dir)
     # e5_embed(articles, 'efed_e5', a_dir)
-    e5_embed(articles, 'e5', None)
+    e5_embed(articles, 'e5', arg.tmp_dir)
 
     if arg.customer in cmap.keys():
         arg.customer = cmap[arg.customer]
@@ -81,4 +81,14 @@ def cluster_compare(arg) -> int:
     print('')
     print('==========================   Textonic   ========================== ')
     cluster_print(ttnx_l_clusters, os.path.join(arg.tmp_dir, 'Textonic-' + f_prefix + '.txt'))
+    return 0
+
+
+def cluster_test(arg) -> int:
+    text = '''
+    Vremenska napoved. 
+    Popoldne bo deloma sončno, nastale bodo krajevne plohe in nevihte. V nedeljo bo  pretežno jasno.
+    '''
+    embeddings = e5_embed_text(arg.tmp_dir, text)
+    print(embeddings)
     return 0
