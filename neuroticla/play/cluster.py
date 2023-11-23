@@ -67,7 +67,7 @@ def cluster_compare(arg) -> int:
         arg.customer = cmap[arg.customer]
 
     oai_l_clusters = cluster_louvain(articles, 'oai_ada_002', 0.92)
-    e5_l_clusters = cluster_louvain(articles, 'e5', 0.92)
+    e5_l_clusters = cluster_louvain(articles, 'e5', 0.91)
     ttnx_l_clusters = cluster_louvain(articles, 'vector_768___textonic_v1', 0.79)
     f_prefix = arg.customer + '_' + arg.start_date + '_' + arg.end_date
     print('')
