@@ -53,7 +53,7 @@ def e5_embed(articles: List[Article], embed_field_name: str, tmp_dir: str, cache
                 logger.debug('Loaded %s article E5 embedding from cache.', a)
                 continue
         logger.debug('Loading %s article E5 embedding ...', a)
-        embeddings = e5_embed_text(tokenizer, model, a.title + ' ' + a.body, max_len)
+        embeddings = _e5_embed(tokenizer, model, a.title + ' ' + a.body, max_len)
         logger.info('Loaded %s article E5 embedding.', a)
         a.data[embed_field_name] = embeddings.tolist()[0]  # extract vector from response
         if cache:
