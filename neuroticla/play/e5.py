@@ -38,13 +38,18 @@ def e5_embed_text(tmp_dir: str, text):
 
 
 def e5_embed(articles: List[Article], embed_field_name: str, tmp_dir: str, fields: str = None,
-             cache: Union[str, None] = None):
+             large_model: bool = False, cache: Union[str, None] = None):
     if embed_field_name.startswith('efed'):
         model_name = 'efederici/e5-base-multilingual-4096'
         max_len = 4096
     else:
         model_name = 'intfloat/multilingual-e5-base'
         max_len = 512
+
+    if large_model:
+        model_name = 'intfloat/multilingual-e5-large'
+        max_len = 512
+
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name, trust_remote_code=True, cache_dir=os.path.join(tmp_dir, model_name))
 

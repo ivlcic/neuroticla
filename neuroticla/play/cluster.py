@@ -47,6 +47,9 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         '-u', '--customer', help='Articles selection customer.', type=str,
         default='a65c7372-9fbe-410c-93d7-4613d26488e7'
     )
+    parser.add_argument(
+        '-l', '--large', help='Enable large E5.', action='e5_large', default=False
+    )
 
 
 def _get_articles(arg):
@@ -68,7 +71,7 @@ def cluster_compare(arg) -> int:
 
     articles: List[Article] = _get_articles(arg)
     openai_embed(articles, 'oai_ada_002', a_dir, arg.fields)
-    e5_embed(articles, 'e5', arg.tmp_dir, arg.fields)
+    e5_embed(articles, 'e5', arg.tmp_dir, arg.fields, arg.e5_large)
 
     if arg.customer in cmap.keys():
         arg.customer = cmap[arg.customer]

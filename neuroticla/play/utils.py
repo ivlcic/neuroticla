@@ -37,7 +37,7 @@ def cluster_louvain(articles: List[Article], embed_field_name: str, similarity_t
 
 
 def cluster_print(clusters: Dict[int, List[Article]], file_name: Optional[str] = None):
-    with open(file_name, 'w') if file_name else sys.stdout as output:
+    with open(file_name, 'w', encoding='utf-8') if file_name else sys.stdout as output:
         for k in clusters.keys():
             articles: List[Article] = clusters[k]
             print(f"Cluster [{articles[0].title}]", file=output)
