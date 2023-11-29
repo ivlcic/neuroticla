@@ -78,7 +78,10 @@ def cluster_compare(arg) -> int:
 
     oai_l_clusters = cluster_louvain(articles, 'oai_ada_002', 0.92)
     e5_l_clusters = cluster_louvain(articles, 'e5', 0.91)
-    f_prefix = arg.customer + '_' + arg.fields + '_' + arg.start_date + '_' + arg.end_date
+    append = ''
+    if arg.e5_large:
+        append = '_large'
+    f_prefix = arg.customer + append + '_' + arg.fields + '_' + arg.start_date + '_' + arg.end_date
     print('')
     print('========================== OpenAI ========================== ')
     cluster_print(oai_l_clusters, os.path.join(arg.tmp_dir, 'OpenAI-' + f_prefix + '.txt'))
