@@ -48,7 +48,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         default='a65c7372-9fbe-410c-93d7-4613d26488e7'
     )
     parser.add_argument(
-        '-l', '--large', help='Enable large E5.', action='e5_large', default=False
+        '-l', '--e5_large', help='Enable large E5.', action='store_true', default=False
     )
 
 
