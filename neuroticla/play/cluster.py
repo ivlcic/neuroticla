@@ -40,9 +40,6 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         '-c', '--country', help='Articles selection country.', type=str
     )
     parser.add_argument(
-        '-f', '--fields', help='Fields to embed.', type=str
-    )
-    parser.add_argument(
         '-f', '--fields', help='Fields to embed.', type=str, default='tb', required=False,
         choices=['b', 'tb']
     )
