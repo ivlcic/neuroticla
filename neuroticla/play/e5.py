@@ -62,6 +62,8 @@ def e5_embed(articles: List[Article], embed_field_name: str, tmp_dir: str, field
         text = a.title + ' ' + a.body
         if fields == 'b':
             text = a.body
+            if not text or not text.strip():
+                text = a.title
         embeddings = _e5_embed(tokenizer, model, text, max_len)
         logger.info('Loaded %s article E5 embedding.', a)
         a.data[embed_field_name] = embeddings.tolist()[0]  # extract vector from response

@@ -20,6 +20,8 @@ def openai_embed(articles: List[Article], embed_field_name: str, cache: Union[st
         text = a.title + ' ' + a.body
         if fields == 'b':
             text = a.body
+            if not text or not text.strip():
+                text = a.title
         tokens = truncate_text_tokens(
             text,
             EMBEDDING_ENCODING,
