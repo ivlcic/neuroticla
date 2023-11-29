@@ -10,15 +10,18 @@ from .constants import EMBEDDING_ENCODING, EMBEDDING_CTX_LENGTH
 logger = logging.getLogger('oai.embed')
 
 
-def openai_embed(articles: List[Article], embed_field_name: str, cache: Union[str, None] = 'data'):
+def openai_embed(articles: List[Article], embed_field_name: str, cache: Union[str, None] = 'data', fields: str = None):
     for a in articles:
         if cache is not None and a.from_cache(cache):  # read from file
             if embed_field_name in a.data:  # we already did the embedding ($$$$)
                 logger.debug('Loaded %s article OpenAI embedding from cache.', a)
                 continue
         logger.debug('Loading %s article OpenAI embedding ...', a)
+        text = a.title + ' ' + a.body
+        if fields == 'b':
+            text = a.body
         tokens = truncate_text_tokens(
-            a.title + ' ' + a.body,
+            text,
             EMBEDDING_ENCODING,
             EMBEDDING_CTX_LENGTH
         )
