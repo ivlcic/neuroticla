@@ -108,8 +108,13 @@ def _oai_token_compute(text):
     return len(tokens)
 
 
-def _compute_stats(arg, article: Article):
-    arg.lang = article.language
+def _embed(arg, article: Article):
+    arg.lang = article.language.split('-', 1)[0]
+    if arg.lang == 'bs':  # since we don't have any tokenizer for Bosnian
+        arg.lang = 'hr'
+    if arg.lang == 'sq':  # since we don't have any tokenizer for Albanian
+        arg.lang = 'en'
+
     tokenizer = get_tokenizer(arg)
 
     body = ''
@@ -164,8 +169,10 @@ def _compute_stats(arg, article: Article):
             'oai_t': t_oait,
         }
     }
-    embd = _e5_embed(arg, article.title + body)
-    article.data['embed_e5'] = embd
+
+    article.data['embed_e5'] = _e5_embed(arg, article.title + ' ' + body)
+    article.data['embed_oai'] = _oai_embed(article.title + ' ' + body)
+
     article.data['stats'] = {
         'chr': article.data['title']['stats']['chr'] + article.data['body']['stats']['chr'],
         'sent': article.data['title']['stats']['sent'] + article.data['body']['stats']['sent'],
@@ -228,7 +235,8 @@ def _filter_write(arg, article: Article, data_path: str):
         if t.pop('class', '') == 'org.dropchop.jop.beans.tags.CustomerTopicGroup':
             t['type'] = 'group'
 
-    _compute_stats(arg, article)
+    _embed(arg, article)
+    logger.info("Done filtering and embedding [%s]", article)
 
     article.data['tags'] = tags
     if not os.path.exists(data_path):
@@ -256,7 +264,7 @@ def corpus_dump(arg) -> int:
         requests = Elastika()
         requests.limit(9999)
         requests.filter_customer(customer)
-        requests.field('rubric')
+        requests.field(['rubric', 'url'])
 
         current_date = end_date
         while current_date > start_date:
