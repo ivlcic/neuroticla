@@ -18,9 +18,9 @@ from ..ner.prep.tokens import Tokenizer, get_tokenizer
 from .. import CommonArguments
 from ..esdl import Elastika
 from ..esdl.article import Article
+from ..oai.constants import EMBEDDING_ENCODING, EMBEDDING_CTX_LENGTH
 from ..oai.embed import openai_embed
-
-
+from ..oai.tokenize import truncate_text_tokens
 
 logger = logging.getLogger('play.cluster')
 
@@ -88,26 +88,34 @@ def _e5_token_compute(arg, text):
     return len(tokens.encodings[0].tokens)
 
 
+def _oai_token_compute(text):
+    tokens = truncate_text_tokens(
+        text,
+        EMBEDDING_ENCODING,
+        EMBEDDING_CTX_LENGTH
+    )
+    return len(tokens)
+
+
 def _compute_stats(arg, article: Article):
     arg.lang = article.language
     tokenizer = get_tokenizer(arg)
 
-    tdoc = tokenizer(article.title)
+    body = ''
+    filtered = False
     mt = article.data['media']['type']['name']
-
-    fbody = ''
     if mt == 'radio' or mt == 'tv':
         for line_idx, line in enumerate(article.body.split('\n')):
             tmp = _filter_body(line_idx, line)
             if tmp:
-                fbody += '\n' if len(fbody) > 0 else ''
-                fbody += tmp
-    if fbody:
-        body = fbody
-    else:
+                body += '\n' if len(body) > 0 else ''
+                body += tmp
+            if not tmp and line:
+                filtered = True
+    if not body:
         body = article.body
 
-    embd = _e5_embed(arg, article.title + body)
+    tdoc = tokenizer(article.title)
     bdoc = tokenizer(body)
     blen = len(body)
 
@@ -121,6 +129,9 @@ def _compute_stats(arg, article: Article):
     b_spt = _e5_token_compute(arg, body)
     t_spt = _e5_token_compute(arg, article.title)
 
+    b_oait = _oai_token_compute(body)
+    t_oait = _oai_token_compute(article.title)
+
     article.data['body'] = {
         'text': article.body,
         'stats': {
@@ -128,7 +139,8 @@ def _compute_stats(arg, article: Article):
             'sent': len(bdoc.sentences),
             'w_t': bwt,
             'sp_t': b_spt,
-            'filter': True if fbody else False
+            'oai_t': b_oait,
+            'filter': True if filtered else False
         }
     }
     article.data['title'] = {
@@ -138,14 +150,17 @@ def _compute_stats(arg, article: Article):
             'sent': len(tdoc.sentences),
             'w_t': twt,
             'sp_t': t_spt,
+            'oai_t': t_oait,
         }
     }
+    embd = _e5_embed(arg, article.title + body)
     article.data['embed_e5'] = embd
     article.data['stats'] = {
         'chr': article.data['title']['stats']['chr'] + article.data['body']['stats']['chr'],
         'sent': article.data['title']['stats']['sent'] + article.data['body']['stats']['sent'],
         'w_t': article.data['title']['stats']['w_t'] + article.data['body']['stats']['w_t'],
-        'sp_t': article.data['title']['stats']['sp_t'] + article.data['body']['stats']['sp_t']
+        'sp_t': article.data['title']['stats']['sp_t'] + article.data['body']['stats']['sp_t'],
+        'oai_t': article.data['title']['stats']['oai_t'] + article.data['body']['stats']['oai_t']
     }
 
 
@@ -236,7 +251,8 @@ def corpus_dump(arg) -> int:
             )
             articles: List[Article] = requests.get(prev_day, current_date)
             for a in articles:
-                _filter_write(arg, a, day_dir)
+                if not os.path.exists(os.path.join(day_dir, a.uuid + '.json')):
+                    _filter_write(arg, a, day_dir)
             logger.info("Dumped [%s::%s] for [%s]", prev_day, current_date, customer)
             current_date = prev_day
     return 0
