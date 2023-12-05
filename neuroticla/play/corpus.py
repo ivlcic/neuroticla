@@ -2,24 +2,22 @@ import os
 import logging
 import json
 import regex
+import openai
 import torch.nn.functional as functional
 
 from argparse import ArgumentParser
 from datetime import datetime, timezone, timedelta
 
-from typing import List, Dict, Any
+from typing import List
 
 from torch import Tensor
 from transformers import AutoTokenizer, AutoModel
 
-from .e5 import e5_embed, e5_embed_text
-from .utils import compare_clusterings, cluster_louvain, cluster_print
-from ..ner.prep.tokens import Tokenizer, get_tokenizer
+from ..ner.prep.tokens import get_tokenizer
 from .. import CommonArguments
 from ..esdl import Elastika
 from ..esdl.article import Article
 from ..oai.constants import EMBEDDING_ENCODING, EMBEDDING_CTX_LENGTH
-from ..oai.embed import openai_embed
 from ..oai.tokenize import truncate_text_tokens
 
 logger = logging.getLogger('play.cluster')
@@ -51,7 +49,7 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
         default=next_day.astimezone(timezone.utc).isoformat()
     )
     parser.add_argument(
-        'customers', help='Articles selection comma-separated customers.', type=str
+        'customers', help='Article selection comma-separated customers or file name.', type=str
     )
 
 
@@ -70,6 +68,7 @@ def _filter_body(sentence_idx, sentence):
     else:
         return ''
 
+
 def _e5_embed(arg, text):
     batch_dict = arg.tokenizer(
         ['passage: ' + text], max_length=512,
@@ -86,6 +85,18 @@ def _e5_token_compute(arg, text):
         ['passage: ' + text], return_tensors='pt'
     )
     return len(tokens.encodings[0].tokens)
+
+
+def _oai_embed(text):
+    tokens = truncate_text_tokens(
+        text,
+        EMBEDDING_ENCODING,
+        EMBEDDING_CTX_LENGTH
+    )
+    embedding = openai.embeddings.create(  # call OpenAI
+        input=tokens, model="text-embedding-ada-002"
+    )
+    return embedding.data[0].embedding  # extract vector from response
 
 
 def _oai_token_compute(text):
@@ -235,7 +246,11 @@ def corpus_dump(arg) -> int:
 
     start_date = datetime.fromisoformat(arg.start_date)
     end_date = datetime.fromisoformat(arg.end_date)
-    customers = arg.customers.split(',')
+    if os.path.exists(arg.customers):
+        with open(arg.customers) as f:
+            customers = f.read().splitlines()
+    else:
+        customers = arg.customers.split(',')
     logger.info("Dumping [%s::%s] for %s", start_date, end_date, customers)
     for customer in customers:
         requests = Elastika()
