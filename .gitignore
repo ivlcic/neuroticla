@@ -9,4 +9,6 @@ result/ner/
 data/nf/**/*.csv
 result/nf*/
 
+result/corpus
+
 __pycache__

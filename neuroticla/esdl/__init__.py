@@ -12,9 +12,9 @@ from .article import *
 class Elastika:
 
     def __init__(self, url: str = None, user: str = None, passwd: str = None):
-        self._user: str = user if user else os.environ['CPTM_SUSER']
-        self._passwd: str = passwd if passwd else os.environ['CPTM_SPASS']
-        self._url: str = url if url else os.environ['CPTM_SURL']
+        self._user: str = user if user else os.environ.get('CPTM_SUSER')
+        self._passwd: str = passwd if passwd else os.environ.get('CPTM_SPASS')
+        self._url: str = url if url else os.environ.get('CPTM_SURL')
         self._filters = []
         self._fields = [
             'uuid',
@@ -149,7 +149,7 @@ class Elastika:
             filters = ',' + ','.join(self._filters)
         return query.replace('<filters>', filters)
 
-    def filter_customer(self, customer_uuid: str) -> TArticles:
+    def filter_customer(self, customer_uuid: Union[str, Iterable[str]]) -> TArticles:
         if not customer_uuid:
             self._filter['customers'] = []
             return self
@@ -157,7 +157,7 @@ class Elastika:
             self._filter['customers'].append(str(uuid3(uuid.NAMESPACE_URL, 'CustomerTopicGroup.' + customer_uuid)))
             return self
 
-        [self._filter['topics'].append(str(uuid3(uuid.NAMESPACE_URL, 'CustomerTopicGroup.' + x))) for x in customer_uuid]
+        [self._filter['customers'].append(str(uuid3(uuid.NAMESPACE_URL, 'CustomerTopicGroup.' + x))) for x in customer_uuid]
         return self
 
     def filter_topic(self, topic_uuid: Union[str, Iterable[str]]) -> TArticles:
