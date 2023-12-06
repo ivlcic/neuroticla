@@ -175,6 +175,7 @@ def _embed(arg, article: Article):
 
 def _filter_write(arg, article: Article, data_path: str):
     article.data.pop('advertValue', None)
+    article.data.pop('mediaReach', None)
     article.data.pop('translations', None)
 
     media = article.data.get('media')
