@@ -26,15 +26,6 @@ __SOURCE_PATT = regex.compile(r'^[\p{Nd}\p{Lu}\s]+([,\s*])*(\s*(\d{1,2}\.\s*\d{1
 __ACTOR_PATT = regex.compile(r'^[\p{Nd}\p{Lu}\s]+(\([\s\p{L}\p{Nd}\p{P}]+\))?\s*$')
 
 
-cmap = {
-    'ccfe00b9-d397-4e85-8310-1a2278ecb73f': 'PS',
-    'a65c7372-9fbe-410c-93d7-4613d26488e7': 'DZ',
-    '9fb98b28-6e82-4e30-8d36-7e3e9e09a9c0': 'NB',
-    '7fd935a6-a1f5-42d1-8b5f-048dd54c07d1': 'NG',
-    '011afa08-1b10-48d4-b0ea-cc05d8f7e2a9': 'CD'
-}
-
-
 def add_args(module_name: str, parser: ArgumentParser) -> None:
     CommonArguments.result_dir('corpus', parser, ('-o', '--result_dir'))
     CommonArguments.tmp_dir(module_name, parser, ('-t', '--tmp_dir'))
@@ -184,13 +175,11 @@ def _embed(arg, article: Article):
 
 def _filter_write(arg, article: Article, data_path: str):
     article.data.pop('advertValue', None)
-    article.data.pop('mediaReach', None)
     article.data.pop('translations', None)
 
     media = article.data.get('media')
     media.pop('publisher', None)
     media.pop('advertValue', None)
-    media.pop('mediaReach', None)
     media.pop('circulation', None)
     media.pop('providerId', None)
     media.pop('descriptor', None)
@@ -205,7 +194,6 @@ def _filter_write(arg, article: Article, data_path: str):
 
     rubric = article.data.get('rubric')
     rubric.pop('advertValue', None)
-    rubric.pop('mediaReach', None)
     rubric.pop('providerId', None)
     rubric.pop('descriptor', None)
     rubric.pop('class', None)
