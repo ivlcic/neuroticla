@@ -259,7 +259,7 @@ def corpus_dump(arg) -> int:
         while current_date > start_date:
             prev_day = current_date - timedelta(days=1)
             day_dir = os.path.join(
-                arg.result_dir, str(current_date.year), f"{current_date.month:02d}", f"{current_date.day:02d}"
+                arg.result_dir, str(prev_day.year), f"{prev_day.month:02d}", f"{prev_day.day:02d}"
             )
             articles: List[Article] = requests.get(prev_day, current_date)
             for a in articles:
@@ -289,7 +289,7 @@ def corpus_correct(arg) -> int:
         while current_date > start_date:
             prev_day = current_date - timedelta(days=1)
             day_dir = os.path.join(
-                arg.result_dir, str(current_date.year), f"{current_date.month:02d}", f"{current_date.day:02d}"
+                arg.result_dir, str(prev_day.year), f"{prev_day.month:02d}", f"{prev_day.day:02d}"
             )
             articles: List[Article] = requests.get(prev_day, current_date)
             for a in articles:
