@@ -9,6 +9,8 @@ result/ner/
 data/nf/**/*.csv
 result/nf*/
 
-result/corpus
+result/corpus/2023
+result/corpus/*.csv
 
 __pycache__
+*.log
