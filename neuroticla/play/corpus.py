@@ -1,8 +1,11 @@
 import os
 import logging
 import json
+import csv
+import pandas as pd
 import regex
 import openai
+import numpy as np
 import torch.nn.functional as functional
 
 from argparse import ArgumentParser
@@ -325,4 +328,95 @@ def corpus_correct(arg) -> int:
                 logger.info("Corrected [%s]", a)
             logger.info("Corrected [%s::%s] for [%s]", prev_day, current_date, customer)
             current_date = prev_day
+    return 0
+
+
+def _calculate_percentiles(data, percentiles=None):
+    if percentiles is None:
+        percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+    return {metric: np.percentile(data[metric], percentiles) for metric in data}
+
+
+def corpus_stats_collect(arg) -> int:
+    start_date = datetime.fromisoformat(arg.start_date)
+    end_date = datetime.fromisoformat(arg.end_date)
+
+    data = {
+        'uuid': [],
+        'published': [],
+        'characters': [],
+        'sentences': [],
+        'word_tok': [],
+        'sp_tok': [],
+        'cl100k_tok': [],
+        'country': [],
+        'language': [],
+        'media_type': [],
+        'industries': [],
+        'rel_path': [],
+        'title': []
+    }
+    industry_map = {}
+    map_file_name = os.path.join(arg.result_dir, 'tag_map.csv')
+    with open(map_file_name, encoding='utf-8') as map_file:
+        try:
+            reader = csv.reader(map_file)
+            for row in reader:
+                # Assuming the first column is the key and the second is the value
+                key = row[0]
+                value = row[1]
+                industry_map[key] = value
+        except:
+            logger.error("Unable to load CSV tag map file [%s].", map_file_name)
+            return 1
+    distinct_industries = set(industry_map.values())
+    print(distinct_industries)
+
+    current_date = end_date
+    while current_date > start_date:
+        prev_day = current_date - timedelta(days=1)
+        rel_path = os.path.join(
+            str(prev_day.year), f"{prev_day.month:02d}", f"{prev_day.day:02d}"
+        )
+        day_dir = os.path.join(arg.result_dir, rel_path)
+        file_names = os.listdir(day_dir)
+        num_files = 0
+        for article_file in file_names:
+            # check if the file is a JSON file
+            if not article_file.endswith('.json'):
+                continue
+            article_file = os.path.join(day_dir, article_file)
+            if not os.path.exists(article_file):
+                continue
+            with open(article_file, encoding='utf-8') as json_file:
+                try:
+                    saved_article = json.load(json_file)
+                except:
+                    logger.error("Unable to load json file [%s].", article_file)
+                    os.remove(article_file)
+                    return 1
+                data['uuid'].append(saved_article['uuid'])
+                data['published'].append(saved_article['published'])
+                data['characters'].append(saved_article['stats']['chr'])
+                data['sentences'].append(saved_article['stats']['sent'])
+                data['word_tok'].append(saved_article['stats']['w_t'])
+                data['sp_tok'].append(saved_article['stats']['sp_t'])
+                data['cl100k_tok'].append(saved_article['stats']['oai_t'])
+                data['country'].append(saved_article['country']['name'])
+                data['language'].append(saved_article['language'].split('-', 1)[0])
+                data['media_type'].append(saved_article['media']['type']['name'])
+
+                ids = set([industry_map[t['uuid']] for t in saved_article['tags'] if t['uuid'] in industry_map])
+                data['industries'].append(ids)
+                data['rel_path'].append(rel_path)
+                data['title'].append(saved_article['title']['text'])
+                num_files += 1
+        logger.info("Collected [%s = %s].", prev_day, num_files)
+        current_date = prev_day
+
+    # Calculate percentiles
+    # percentiles = _calculate_percentiles(data)
+    df = pd.DataFrame(data)
+    df.to_csv(os.path.join(arg.result_dir, f'stats-{arg.start_date}_{arg.end_date}.csv'))
+    print(df)
     return 0
