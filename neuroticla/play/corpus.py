@@ -88,7 +88,7 @@ def _oai_embed(text):
         EMBEDDING_CTX_LENGTH
     )
     embedding = openai.embeddings.create(  # call OpenAI
-        input=tokens, model="text-embedding-ada-002"
+        input=tokens, model="text-embedding-ada-002", timeout=10
     )
     return embedding.data[0].embedding  # extract vector from response
 
