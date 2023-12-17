@@ -3,10 +3,11 @@
 
 ## Description
 
-Initially, the corpus was created by choosing the most representative clients engaged in news monitoring within a specific industry or domain for each country.
+The corpus was created by choosing the most representative clients engaged in news monitoring within a specific industry or domain for each country.
 The selection of clients was also influenced by the volume of news monitoring, following the principle that more coverage would enhance the corpus.
-The objective was to ensure the diversity of the corpus in terms of news content.
-Subsequently, a one-year (2023) time frame was chosen considering the tasks associated with the EMMA project, which involve long-term and large-scale news analysis. We were also aiming for a larger corpus size because potentially used LLM usually needs large data for training.
+The objective was to ensure the diversity of the corpus in terms of news content.  
+Subsequently, a one-year (2023) time frame was chosen considering the tasks associated with the EMMA project, which involve long-term and large-scale news analysis.  
+We were also aiming for a larger corpus size because potentially used large language models usually need large data for training or fine-tuning.
 
 ## Properties
 
@@ -18,7 +19,8 @@ The period of the collected articles is 1.1.2023 - 15.12.2023.
 Mostly, ISO 639-1 language codes are used for marking news article language, but sometimes, the format is extended following the BCP 47 standard for regions and scripts.  
 (for instance, the code sr-ME-Cyrl would mean the Serbian language from the Montenegro region in Cyrillic script.)  
 When utilizing the corpus, it is advisable not to rely entirely on the language tag or script tag, as the language is initially inherited from the media outlet, which may employ Latin and Cyrillic scripts.  
-Likewise, the ISO 3166-1 two-letter country code indicates the country of origin for articles. However, in instances where the actual country of origin is ambiguous, the country code primarily designates the location where the article is published.
+Likewise, the ISO 3166-1 two-letter country code indicates the country of origin for articles. However, in instances where the actual country of origin is ambiguous, the country code primarily designates the location where the article is published.  
+For the social media articles the non-standard arbitrary country code "GO" (for global) is used (because of technical legacy reasons).
 
 The Industry / Domain tags were chosen arbitrarily and have several problems, so they *should not be used* for research until further improved.  
 The main problems are:
@@ -32,12 +34,12 @@ The main problems are:
 ## Format
 
 The corpus comprises twelve Bzip2 compressed tar archives, each containing a month of media monitoring news articles. SHA1 checksums are also given so that the corpus integrity can be preserved.  
-Each archive contains the following directory (YYYY/MM/DD) structure:
-```
-2023
-├── 01
-│   ├── 01
-│   │   ├── 00046d8f-89cb-11ed-bfff-6f1f3528f840.json
+Each archive contains the following directory (Year/Month/Day/unique_id.json) structure:
+``` bash
+2023  # year of retrieval
+├── 01  # month of retrieval
+│   ├── 01  # day of retrieval
+│   │   ├── 00046d8f-89cb-11ed-bfff-6f1f3528f840.json  # individual article file 
 │   │   ├── 0011d7a9-89ad-11ed-8e94-37c1e99ec6c5.json
 │   │   ├── 0034059b-89ad-11ed-ab84-05da78aebe3b.json
 │   │   ├── 003dc946-89d2-11ed-8e94-37c1e99ec6c5.json
@@ -53,7 +55,7 @@ Each news article data consists of:
 - Text statistics.
 - Arbitrary client tags unique identifiers in a flattened tree structure.
 
-News articles are stored in the following JSON format:
+Individual news articles are stored in the following JSON format:
 ```
 {
   "country": {
