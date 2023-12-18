@@ -31,10 +31,13 @@ The main problems are:
   (see the example above)
 - Their sole purpose was to diversify corpus content selection as much as possible.
 
-Transcripts have usually synthetic data added in body:
-- Media outlet name, followed by programme and date-time of broadcast in first line of body text.
-- Speaker name, before each spoken passage of text.
-This data is removed when computing embeddings and article's body section is marked with the `filtered` JSON property.
+The broadcast transcripts from TV and Radio Media have usually synthetic data added in the article body section:
+ - The media outlet name is followed by the programme and the date of broadcast in the first line of the body text.
+ - The speaker's name is before each spoken passage of text.  
+
+This data is removed when computing embeddings, and the article's body section is marked with the `filtered` boolean JSON property.
+
+
 
 ## Format
 
