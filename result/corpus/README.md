@@ -1,5 +1,5 @@
 # EMMA 1mio corpus
-(document version 1.1.2)
+(document version 1.2.1)
 
 ## Description
 
@@ -167,9 +167,13 @@ Individual news articles are stored in the following JSON format:
 }
 ```
 
-For convenience, an index file (EMMA_1mio-v1.0-index.cvs) was constructed from the corpus article files for quicker and easier:
+For convenience, an index file (`EMMA_1mio-v1.0-index.cvs`) was constructed from the corpus article files for quicker and easier:
 - Navigation
 - Sub-corpus selection
 - Statistic analysis
 
-Lastly, the tag_industries_map.csv is a file which contains a mapping from clients (actually clients' topic groups) to a selected industry/domain.
+Lastly, the `tag_industries_map.csv` is a file which contains a mapping from clients (actually clients' topic groups) to a selected industry/domain.
+
+## Statistics
+
+Corpus statistics can be observed and extended by using the Jupyter Notebook `ìndex-stats.ipynb`.
