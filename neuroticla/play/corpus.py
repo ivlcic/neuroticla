@@ -483,7 +483,7 @@ def corpus_cluster_xlsx(arg) -> int:
     logger.info(
         "Collected [%s] files [%s::%s] ", len(collected), start_date, end_date
     )
-    trsh=0.94
+    trsh = 0.94
     clusters = cluster_louvain(collected, 'ebd', trsh)
     logger.info(
         "Computed [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
@@ -494,5 +494,7 @@ def corpus_cluster_xlsx(arg) -> int:
     # cluster_print_csv(
     #     clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.csv')
     # )
-
+    logger.info(
+        "Done [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
+    )
     return 0

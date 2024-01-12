@@ -11,7 +11,7 @@ from typing import List, Dict, Optional
 from openpyxl.cell import Cell, WriteOnlyCell
 from sklearn.metrics.pairwise import cosine_similarity
 from openpyxl import Workbook
-from openpyxl.styles import Font, Color, Alignment, NamedStyle, Border, Side
+from openpyxl.styles import Font, Color, Alignment, NamedStyle, Border, Side, PatternFill
 from openpyxl.comments import Comment
 from ..esdl.article import Article
 
@@ -79,12 +79,13 @@ def cluster_print_xlsx(clusters: Dict[int, List[Article]], file_name: Optional[s
     ws.column_dimensions['H'].width = 38
 
     arial = Font(name='Arial', size=10)
-    default_style = NamedStyle(name='default')
+    default_style = NamedStyle(name='def')
     default_style.font = arial
     wb.add_named_style(default_style)
 
-    default_style_b = NamedStyle(name='default_b')
+    default_style_b = NamedStyle(name='def_b')
     default_style_b.font = Font(name='Arial', size=10, b=True)
+    default_style_b.fill = PatternFill('solid', fgColor='FEE135')
     wb.add_named_style(default_style_b)
 
     link_style = NamedStyle(name='hl')
@@ -93,6 +94,7 @@ def cluster_print_xlsx(clusters: Dict[int, List[Article]], file_name: Optional[s
 
     link_style_b = NamedStyle(name='hl_b')
     link_style_b.font = Font(name='Arial', size=10, color='0000FF', underline='single', b=True)
+    link_style_b.fill = PatternFill('solid', fgColor='FEE135')
     wb.add_named_style(link_style_b)
 
     uuid_style = NamedStyle(name='uuid')
@@ -149,66 +151,58 @@ def cluster_print_xlsx(clusters: Dict[int, List[Article]], file_name: Optional[s
                     url += '&purpose=2&language=en&summaryType=override&showHighlights=true&&dcStringToken=' + kl_token
 
                 previewUrl = 'https://www.klipingmap.com/v3.0/media/html?filePath=' + rel_path
-                previewUrl += '&dcStringToken=' + kl_token
+                previewUrl += '&purpose=2&language=en&summaryType=override&showHighlights=true&dcStringToken=' + kl_token
                 pdfUrl = 'https://www.klipingmap.com/v3.0/media/pdf?filePath=' + rel_path
                 pdfUrl += '&purpose=2&language=en&summaryType=override&showHighlights=true&&dcStringToken=' + kl_token
 
             row = []
             a_cell: WriteOnlyCell = WriteOnlyCell(ws, value=cl.uuid)
-            a_cell.style = uuid_style
+            a_cell.style = 'uuid'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
             a_cell = WriteOnlyCell(ws, value=a.title)
-            if url:
-                if a.uuid == cl.uuid:
-                    a_cell.style = link_style_b
-                else:
-                    a_cell.style = link_style
-
-                a_cell.hyperlink = url
+            if a.uuid == cl.uuid and size > 1:
+                a_cell.style = 'hl_b'
             else:
-                if a.uuid == cl.uuid:
-                    a_cell.style = default_style_b
-                else:
-                    a_cell.style = default_style
+                a_cell.style = 'hl'
+            a_cell.hyperlink = previewUrl
 
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
             a_cell = WriteOnlyCell(ws, value=a.published)
-            a_cell.style = published_style
+            a_cell.style = 'pub'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
             a_cell = WriteOnlyCell(ws, value=broadcast)
-            a_cell.style = broadcast_style
-            a_cell.hyperlink = previewUrl
+            a_cell.style = 'br'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
             a_cell = WriteOnlyCell(ws, value=a.mediaType['name'])
-            a_cell.style = default_style
+            a_cell.style = 'def'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
             a_cell = WriteOnlyCell(ws, value=a.media)
-            a_cell.style = default_style
+            a_cell.style = 'def'
             if url:
-                a_cell.style = default_style
-            else:
-                a_cell.style = link_style
+                a_cell.style = 'hl'
                 a_cell.hyperlink = url
+            else:
+                a_cell.style = 'def'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
             a_cell = WriteOnlyCell(ws, value=a.created)
-            a_cell.style = created_style
+            a_cell.style = 'cr'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
             a_cell = WriteOnlyCell(ws, value=a.uuid)
-            a_cell.style = uuid_style
+            a_cell.style = 'uuid'
             a_cell.hyperlink = pdfUrl
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
@@ -241,11 +235,14 @@ def cluster_print_csv(clusters: Dict[int, List[Article]], file_name: Optional[st
                     str(a.created.year), f"{a.created.month:02d}", f"{a.created.day:02d}", a.uuid
                 )
                 if a.url:
-                    url = 'https://www.klipingmap.com/v3.0/media/redirect?filePath=' + rel_path
+                    url = 'https://stag-www.klipingmap.com/v3.0/media/redirect?filePath=' + rel_path
                     url += '&purpose=2&language=en&summaryType=override&showHighlights=true&&dcStringToken=' + kl_token
 
                 previewUrl = 'https://www.klipingmap.com/v3.0/media/html?filePath=' + rel_path
-                previewUrl += '&dcStringToken=' + kl_token
+                if a.mediaType['name'] == 'print':
+                    previewUrl = 'https://www.klipingmap.com/v3.0/media/image?filePath=' + rel_path
+
+                previewUrl += '&purpose=2&language=en&summaryType=override&showHighlights=true&&dcStringToken=' + kl_token
                 pdfUrl = 'https://www.klipingmap.com/v3.0/media/pdf?filePath=' + rel_path
                 pdfUrl += '&purpose=2&language=en&summaryType=override&showHighlights=true&&dcStringToken=' + kl_token
 
