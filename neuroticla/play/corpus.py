@@ -22,6 +22,7 @@ from ..esdl import Elastika
 from ..esdl.article import Article
 from ..oai.constants import EMBEDDING_ENCODING, EMBEDDING_CTX_LENGTH
 from ..oai.tokenize import truncate_text_tokens
+from .utils import cluster_louvain, cluster_print_xlsx, cluster_print_csv
 
 logger = logging.getLogger('play.cluster')
 
@@ -419,4 +420,79 @@ def corpus_stats_collect(arg) -> int:
     df = pd.DataFrame(data)
     df.to_csv(os.path.join(arg.result_dir, f'stats-{arg.start_date}_{arg.end_date}.csv'))
     print(df)
+    return 0
+
+
+def corpus_cluster_xlsx(arg) -> int:
+    start_date = datetime.fromisoformat(arg.start_date)
+    end_date = datetime.fromisoformat(arg.end_date)
+
+    collected = []
+    current_date = end_date
+    while current_date > start_date:
+        prev_day = current_date - timedelta(days=1)
+        rel_path = os.path.join(
+            str(prev_day.year), f"{prev_day.month:02d}", f"{prev_day.day:02d}"
+        )
+        day_dir = os.path.join(arg.result_dir, rel_path)
+        file_names = os.listdir(day_dir)
+        num_files = 0
+        num_scanned = 0
+        for article_file in file_names:
+            # check if the file is a JSON file
+            if not article_file.endswith('.json'):
+                continue
+            article_file = os.path.join(day_dir, article_file)
+            if not os.path.exists(article_file):
+                continue
+            with open(article_file, encoding='utf-8') as json_file:
+                try:
+                    saved_article = json.load(json_file)
+                except:
+                    logger.error("Unable to load json file [%s].", article_file)
+                    os.remove(article_file)
+                    return 1
+                num_scanned += 1
+                if saved_article['country']['name'] != 'SI':
+                    continue
+                data = {
+                    'ebd': saved_article['embed_oai']
+                }
+                article = Article(data)
+                article.country = {'name': saved_article['country']['name']}
+                article.title = saved_article['title']['text']
+                article.uuid = saved_article['uuid']
+                article.published = datetime.fromisoformat(saved_article['published']).replace(tzinfo=None)
+                article.created = datetime.fromisoformat(saved_article['published']).replace(tzinfo=None)
+                article.media = saved_article['media']['name']
+                if 'mediaReach' in saved_article['media']:
+                    article.mediaReach = saved_article['media']['mediaReach']
+                else:
+                    article.mediaReach = 0
+                article.mediaType = saved_article['media']['type']
+                if 'url' in saved_article:
+                    article.url = saved_article['url']
+                # article.body = saved_article['body']['text']
+                collected.append(article)
+                num_files += 1
+        logger.info(
+            "Reread [%s] and kept [%s] files for [%s::%s] ", num_scanned, num_files, prev_day, current_date
+        )
+        current_date = prev_day
+
+    logger.info(
+        "Collected [%s] files [%s::%s] ", len(collected), start_date, end_date
+    )
+    trsh=0.94
+    clusters = cluster_louvain(collected, 'ebd', trsh)
+    logger.info(
+        "Computed [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
+    )
+    cluster_print_xlsx(
+        clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.xlsx')
+    )
+    # cluster_print_csv(
+    #     clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.csv')
+    # )
+
     return 0

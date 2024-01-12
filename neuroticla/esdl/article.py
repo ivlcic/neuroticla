@@ -17,6 +17,8 @@ class Article:
     def __init(self):
         if 'uuid' in self.data:
             self.uuid = self.data['uuid']
+        if 'url' in self.data:
+            self.uuid = self.data['url']
         if 'created' in self.data:
             self.created = datetime.fromisoformat(self.data['created'].replace('Z', '+00:00'))
         if 'published' in self.data:
@@ -43,7 +45,7 @@ class Article:
             if 'tags' in self.data['media']:
                 for tag in self.data['media']['tags']:
                     if 'org.dropchop.jop.beans.tags.MediaType' == tag['class']:
-                        self.media_type = tag
+                        self.mediaType = tag
 
         if 'tags' in self.data:
             for tag in self.data['tags']:
@@ -55,13 +57,14 @@ class Article:
     def __init__(self, json_object: Dict[str, Any]):
         self.data: Dict[str, Any] = json_object
         self.uuid: str = ''
+        self.url: str = ''
         self.language: str = ''
         self.title: str = ''
         self.body: str = ''
         self.media: str = ''
         self.mediaReach: int = 0
         self.advertValue: float = 0.0
-        self.media_type: Dict[str, Any] = {}
+        self.mediaType: Dict[str, Any] = {}
         self.customers: List = []
         self.topics: List = []
         self.country: str = ''
