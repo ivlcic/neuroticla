@@ -341,6 +341,7 @@ def _calculate_percentiles(data, percentiles=None):
     return {metric: np.percentile(data[metric], percentiles) for metric in data}
 
 
+# ./play corpus stats_collect -s 2023-01-01 -e 2023-12-15 result/corpus/customers.txt
 def corpus_stats_collect(arg) -> int:
     start_date = datetime.fromisoformat(arg.start_date)
     end_date = datetime.fromisoformat(arg.end_date)
@@ -422,10 +423,9 @@ def corpus_stats_collect(arg) -> int:
     # percentiles = _calculate_percentiles(data)
     df = pd.DataFrame(data)
     df.to_csv(os.path.join(arg.result_dir, f'stats-{arg.start_date}_{arg.end_date}.csv'))
-    print(df)
     return 0
 
-
+# ./play corpus cluster_dump -c SI -s 2023-03-05 -e 2023-03-13 result/corpus/customers.txt
 def corpus_cluster_dump(arg) -> int:
     start_date = datetime.fromisoformat(arg.start_date)
     end_date = datetime.fromisoformat(arg.end_date)
@@ -497,9 +497,9 @@ def corpus_cluster_dump(arg) -> int:
         logger.info(
             "Computed [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
         )
-        #cluster_print_xlsx(
-        #    clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.xlsx')
-        #)
+        cluster_print_xlsx(
+            clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.xlsx')
+        )
         cluster_print_json(
             clusters,
             arg.country,
