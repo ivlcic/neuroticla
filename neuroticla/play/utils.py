@@ -1,5 +1,7 @@
+import json
 import os
 import sys
+from datetime import datetime
 from operator import attrgetter
 
 import networkx as nx
@@ -136,7 +138,7 @@ def cluster_print_xlsx(clusters: Dict[int, List[Article]], file_name: Optional[s
         for x, a in enumerate(articles):
             broadcast = ''
             if a.mediaType['name'] == 'tv' or a.mediaType['name'] == 'radio':
-                broadcast = a.published
+                broadcast = a.published.replace(tzinfo=None)
 
             kl_token = os.environ.get('KMAP_TOKEN', None)
             previewUrl = ''
@@ -171,7 +173,7 @@ def cluster_print_xlsx(clusters: Dict[int, List[Article]], file_name: Optional[s
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
-            a_cell = WriteOnlyCell(ws, value=a.published)
+            a_cell = WriteOnlyCell(ws, value=a.published.replace(tzinfo=None))
             a_cell.style = 'pub'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
@@ -196,7 +198,7 @@ def cluster_print_xlsx(clusters: Dict[int, List[Article]], file_name: Optional[s
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
 
-            a_cell = WriteOnlyCell(ws, value=a.created)
+            a_cell = WriteOnlyCell(ws, value=a.created.replace(tzinfo=None))
             a_cell.style = 'cr'
             _xlsx_cluster_cell_border(size, x, a_cell)
             row.append(a_cell)
@@ -265,6 +267,46 @@ def cluster_print_csv(clusters: Dict[int, List[Article]], file_name: Optional[st
         'Cluster', 'Title', 'Published', 'Broadcast', 'Type', 'Source', 'Created', 'UUID', 'URL', 'Preview', 'PDF'
     ])
     df.to_csv(file_name, index=False)
+
+
+def cluster_print_json(clusters: Dict[int, List[Article]], country: str, start: datetime, end: datetime,
+                       file_name: Optional[str] = None):
+    data = {'from': start.isoformat(), 'to': end.isoformat()}
+    if country:
+        data['country'] = country
+    data['clusters'] = []
+    for c, k in enumerate(clusters.keys()):
+        articles: List[Article] = clusters[k]
+        cl = articles[0]
+        size = len(articles)
+        cluster = {'uuid': cl.uuid, 'size': size, 'idx': c, 'title': cl.title, 'articles': []}
+        articles.sort(key=lambda article: article.created)
+        data['clusters'].append(cluster)
+        for x, a in enumerate(articles):
+            cl_article = {
+                'uuid': a.uuid,
+                'published': a.published.isoformat(),
+                'crated': a.created.isoformat(),
+                'media': a.media,
+                'rubric': a.rubric,
+                'language': a.language,
+                'country': a.country['name'],
+                'mediaType': a.mediaType['name'],
+                'mediaReach': a.mediaReach,
+                'title': a.title,
+                'relPath': a.data['relPath']
+            }
+            if a.url:
+                cl_article['url'] = a.url
+            cl_article['body'] = a.body
+            cluster['articles'].append(cl_article)
+
+    if not file_name:
+        file_name = 'clusters.json'
+
+    with open(file_name, 'wt') as fp:
+        json.dump(data, fp, indent=2)
+    pass
 
 
 def compare_clusterings(a_first, a_second, cf_name='First Clustering', cs_name='Second Clustering'):

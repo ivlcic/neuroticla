@@ -22,7 +22,7 @@ from ..esdl import Elastika
 from ..esdl.article import Article
 from ..oai.constants import EMBEDDING_ENCODING, EMBEDDING_CTX_LENGTH
 from ..oai.tokenize import truncate_text_tokens
-from .utils import cluster_louvain, cluster_print_xlsx, cluster_print_csv
+from .utils import cluster_louvain, cluster_print_xlsx, cluster_print_json
 
 logger = logging.getLogger('play.cluster')
 
@@ -42,6 +42,9 @@ def add_args(module_name: str, parser: ArgumentParser) -> None:
     parser.add_argument(
         '-e', '--end_date', help='Articles end selection date.', type=str,
         default=next_day.astimezone(timezone.utc).isoformat()
+    )
+    parser.add_argument(
+        '-c', '--country', help='Articles selection country.', type=str
     )
     parser.add_argument(
         'customers', help='Article selection comma-separated customers or file name.', type=str
@@ -423,7 +426,7 @@ def corpus_stats_collect(arg) -> int:
     return 0
 
 
-def corpus_cluster_xlsx(arg) -> int:
+def corpus_cluster_dump(arg) -> int:
     start_date = datetime.fromisoformat(arg.start_date)
     end_date = datetime.fromisoformat(arg.end_date)
 
@@ -453,18 +456,23 @@ def corpus_cluster_xlsx(arg) -> int:
                     os.remove(article_file)
                     return 1
                 num_scanned += 1
-                if saved_article['country']['name'] != 'SI':
-                    continue
+                if arg.country is not None:
+                    if saved_article['country']['name'] != arg.country:
+                        continue
                 data = {
                     'ebd': saved_article['embed_oai']
                 }
                 article = Article(data)
                 article.country = {'name': saved_article['country']['name']}
+                article.language = saved_article['language']
                 article.title = saved_article['title']['text']
+                article.body = saved_article['body']['text']
                 article.uuid = saved_article['uuid']
-                article.published = datetime.fromisoformat(saved_article['published']).replace(tzinfo=None)
-                article.created = datetime.fromisoformat(saved_article['published']).replace(tzinfo=None)
+                article.data['relPath'] = article_file[len(arg.result_dir) + 1:]
+                article.published = datetime.fromisoformat(saved_article['published'])
+                article.created = datetime.fromisoformat(saved_article['created'])
                 article.media = saved_article['media']['name']
+                article.rubric = saved_article['rubric']['name']
                 if 'mediaReach' in saved_article['media']:
                     article.mediaReach = saved_article['media']['mediaReach']
                 else:
@@ -483,18 +491,26 @@ def corpus_cluster_xlsx(arg) -> int:
     logger.info(
         "Collected [%s] files [%s::%s] ", len(collected), start_date, end_date
     )
-    trsh = 0.94
-    clusters = cluster_louvain(collected, 'ebd', trsh)
-    logger.info(
-        "Computed [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
-    )
-    cluster_print_xlsx(
-        clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.xlsx')
-    )
-    # cluster_print_csv(
-    #     clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.csv')
-    # )
-    logger.info(
-        "Done [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
-    )
+    for i in range(3):
+        trsh = 0.95 + (0.01 * i)
+        clusters = cluster_louvain(collected, 'ebd', trsh)
+        logger.info(
+            "Computed [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
+        )
+        #cluster_print_xlsx(
+        #    clusters, os.path.join(arg.result_dir, f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh*100))}.xlsx')
+        #)
+        cluster_print_json(
+            clusters,
+            arg.country,
+            start_date,
+            end_date,
+            os.path.join(
+                arg.result_dir,
+                f'clusters-{arg.start_date}_{arg.end_date}_{(int(trsh * 100))}.json'
+            )
+        )
+        logger.info(
+            "Done [%s] clusters [%s::%s] ", len(clusters), start_date, end_date
+        )
     return 0
