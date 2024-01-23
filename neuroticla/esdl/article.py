@@ -18,7 +18,7 @@ class Article:
         if 'uuid' in self.data:
             self.uuid = self.data['uuid']
         if 'url' in self.data:
-            self.uuid = self.data['url']
+            self.url = self.data['url']
         if 'created' in self.data:
             self.created = datetime.fromisoformat(self.data['created'].replace('Z', '+00:00'))
         if 'published' in self.data:

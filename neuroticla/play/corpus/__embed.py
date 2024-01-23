@@ -1,12 +1,11 @@
-import os
 import logging
-import json
 import regex
 import openai
 import torch.nn.functional as functional
 
 from torch import Tensor
 
+from .__utils import Params
 from ...ner.prep.tokens import get_tokenizer
 from ...esdl.article import Article
 from ...oai.constants import EMBEDDING_ENCODING, EMBEDDING_CTX_LENGTH
@@ -34,19 +33,19 @@ def _filter_body(sentence_idx, sentence):
         return ''
 
 
-def _e5_embed(arg, text):
-    batch_dict = arg.tokenizer(
+def _e5_embed(params: Params, text):
+    batch_dict = params.tokenizer(
         ['passage: ' + text], max_length=512,
         padding=True, truncation=True, return_tensors='pt'
     )
-    outputs = arg.model(**batch_dict)
+    outputs = params.model(**batch_dict)
     embeddings = _average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
     embeddings = functional.normalize(embeddings, p=2, dim=1)
     return embeddings.tolist()[0]
 
 
-def _e5_token_compute(arg, text):
-    tokens = arg.tokenizer(
+def _e5_token_compute(params: Params, text):
+    tokens = params.tokenizer(
         ['passage: ' + text], return_tensors='pt'
     )
     return len(tokens.encodings[0].tokens)
@@ -73,14 +72,14 @@ def _oai_token_compute(text):
     return len(tokens)
 
 
-def _embed(arg, article: Article):
-    arg.lang = article.language.split('-', 1)[0]
-    if arg.lang == 'bs':  # since we don't have any tokenizer for Bosnian
-        arg.lang = 'hr'
-    if arg.lang == 'sq':  # since we don't have any tokenizer for Albanian
-        arg.lang = 'en'
+def _embed(params: Params, article: Article):
+    params.lang = article.language.split('-', 1)[0]
+    if params.lang == 'bs':  # since we don't have any tokenizer for Bosnian
+        params.lang = 'hr'
+    if params.lang == 'sq':  # since we don't have any tokenizer for Albanian
+        params.lang = 'en'
 
-    tokenizer = get_tokenizer(arg)
+    tokenizer = get_tokenizer(params)
 
     body = ''
     filtered = False
@@ -107,8 +106,8 @@ def _embed(arg, article: Article):
     for sentence in tdoc.sentences:
         twt += len(sentence.tokens)
 
-    b_spt = _e5_token_compute(arg, body)
-    t_spt = _e5_token_compute(arg, article.title)
+    b_spt = _e5_token_compute(params, body)
+    t_spt = _e5_token_compute(params, article.title)
 
     b_oait = _oai_token_compute(body)
     t_oait = _oai_token_compute(article.title)
@@ -135,8 +134,9 @@ def _embed(arg, article: Article):
         }
     }
 
-    article.data['embed_e5'] = _e5_embed(arg, article.title + ' ' + body)
-    article.data['embed_oai'] = _oai_embed(article.title + ' ' + body)
+    if not params.skipEmbedding:
+        article.data['embed_e5'] = _e5_embed(params, article.title + ' ' + body)
+        article.data['embed_oai'] = _oai_embed(article.title + ' ' + body)
 
     article.data['stats'] = {
         'chr': article.data['title']['stats']['chr'] + article.data['body']['stats']['chr'],
@@ -146,63 +146,7 @@ def _embed(arg, article: Article):
         'oai_t': article.data['title']['stats']['oai_t'] + article.data['body']['stats']['oai_t']
     }
 
+    if not params.skipEmbedding:
+        logger.info("Done embedding [%s]", article)
 
-def _filter_write(arg, article: Article, data_path: str):
-    article.data.pop('advertValue', None)
-    article.data.pop('mediaReach', None)
-    article.data.pop('translations', None)
 
-    media = article.data.get('media')
-    media.pop('publisher', None)
-    media.pop('advertValue', None)
-    media.pop('circulation', None)
-    media.pop('providerId', None)
-    media.pop('descriptor', None)
-    media.pop('class', None)
-    media.pop('language', None)
-    tags = media.pop('tags', [])
-    tags[:] = [tup for tup in tags if tup.get('class', '') == 'org.dropchop.jop.beans.tags.MediaType']
-    media['type'] = {
-        'name': tags[0]['name'],
-        'uuid': tags[0]['uuid']
-    }
-
-    rubric = article.data.get('rubric')
-    rubric.pop('advertValue', None)
-    rubric.pop('providerId', None)
-    rubric.pop('descriptor', None)
-    rubric.pop('class', None)
-
-    country = article.data.get('country')
-    country.pop('tags', None)
-    country.pop('descriptor', None)
-    country.pop('class', None)
-
-    for k, v in article.data.get('translations', {}).items():
-        v.pop('bodyPages')
-        v.pop('bodyOctetLen')
-        v.pop('bodyCalculatedPages')
-        v.pop('bodyMd5')
-        v.pop('bodyBillingPages')
-        v.pop('class')
-        v.pop('uuid')
-
-    tags = article.data.pop('tags', [])
-    tags[:] = [tup for tup in tags if tup.get('class', '') != 'org.dropchop.jop.beans.tags.Genre']
-    for i, t in enumerate(tags):
-        t.pop('descriptor', None)
-        t.pop('name', None)
-        t.pop('_OOP', None)
-        if t.pop('class', '') == 'org.dropchop.jop.beans.tags.CustomerTopic':
-            t['type'] = 'topic'
-        if t.pop('class', '') == 'org.dropchop.jop.beans.tags.CustomerTopicGroup':
-            t['type'] = 'group'
-
-    _embed(arg, article)
-    logger.info("Done filtering and embedding [%s]", article)
-
-    article.data['tags'] = tags
-    if not os.path.exists(data_path):
-        os.makedirs(data_path)
-    with open(os.path.join(data_path, article.uuid + '.json'), 'w', encoding='utf8') as json_file:
-        json.dump(article.data, json_file, indent='  ', ensure_ascii=False)
