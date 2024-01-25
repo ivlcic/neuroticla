@@ -98,8 +98,11 @@ def _extract_intervals(matched: List[Dict[str, Any]], kwe_iptc_map: Dict[str, Di
                 result['kwe'].append(k_uuid)
             if k_uuid not in results['kwe']:
                 kwe = {
-                    'topic_uuid': t_uuid,
-                    'topic_name': k['category']['metadata']['topicName'],
+                    'topic': {
+                        'uuid': t_uuid,
+                        'name': k['category']['metadata']['topicName']
+                    },
+                    # 'topic_name': k['category']['metadata']['topicName'],
                     'expr': k['category']['metadata']['regex']
                 }
                 # if k_uuid in kwe_iptc_map: #  better to map this on training since it can change
@@ -136,7 +139,7 @@ def correct(arg) -> int:
     params = Params(arg.start_date, arg.end_date, customers, arg.result_dir)
 
     def callback(s: State, saved: Dict[str, Any], article: Article) -> int:
-        if 'ver' in saved and saved['ver'] == '1.1d':
+        if 'ver' in saved and saved['ver'] == '1.1b':
             return 1
         filter_article(article)
         topic_uuids = []
@@ -156,8 +159,10 @@ def correct(arg) -> int:
             if 'refUuid' in sub_dict and sub_dict['refUuid'] in rates:
                 sub_dict['sentiment'] = rates[sub_dict['refUuid']]
             if 'type' in sub_dict and sub_dict['type'] == 'topic':
-                if 'uuid' in sub_dict and sub_dict['uuid'] not in params.customersCtg:
-                    topic_uuids.append(sub_dict['uuid'])
+                # if 'uuid' in sub_dict and sub_dict['uuid'] not in params.customersCtg:
+                topic_uuids.append(sub_dict['uuid'])
+                if sub_dict['uuid'] in article.data['topic_names']:
+                    sub_dict['name'] = article.data['topic_names'][sub_dict['uuid']]
 
         params.tagCallback = filter_tag
         traverse_article_tags(params, 0, saved)
@@ -171,7 +176,7 @@ def correct(arg) -> int:
             saved['body']['matches'] = _extract_intervals(
                 kws['contentIntervals'], kwe_iptc_map
             )
-        saved['ver'] = '1.1d'
+        saved['ver'] = '1.1b'
 
         with open(s.file, 'w', encoding='utf8') as json_file:
             json.dump(saved, json_file, indent='  ', ensure_ascii=False)

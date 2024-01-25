@@ -38,7 +38,7 @@ class Params:
         self.end = datetime.fromisoformat(end_date)
         self.result_dir = result_dir
         self.customers = customers
-        self.customersCtg = [str(uuid3(uuid.NAMESPACE_URL, 'CustomerTopicGroup.' + x)) for x in customers]
+        # self.customersCtg = [str(uuid3(uuid.NAMESPACE_URL, 'CustomerTopicGroup.' + x)) for x in customers]
         self.requests: Union[Elastika, None] = None
         self.tokenizer: Union[PreTrainedTokenizer, None] = None
         self.model: Union[PreTrainedModel, None] = None
@@ -103,13 +103,17 @@ def filter_article(article: Article):
         v.pop('uuid')
 
     tags = article.data.pop('tags', [])
+    article.data['topic_names'] = {}
     tags[:] = [tup for tup in tags if tup.get('class', '') != 'org.dropchop.jop.beans.tags.Genre']
     for i, t in enumerate(tags):
         t.pop('descriptor', None)
-        t.pop('name', None)
+        tag_name = t.pop('name', None)
         t.pop('_OOP', None)
         if t.pop('class', '') == 'org.dropchop.jop.beans.tags.CustomerTopic':
             t['type'] = 'topic'
+            if tag_name:
+                article.data['topic_names'][t['uuid']] = tag_name
+                t['name'] = tag_name
         if t.pop('class', '') == 'org.dropchop.jop.beans.tags.CustomerTopicGroup':
             t['type'] = 'group'
 
@@ -118,20 +122,27 @@ def filter_article(article: Article):
 
 
 def _filter_tags(params: Params, level: int, sub_dict: Dict[str, Any]) -> bool:
-    if level > 0:
-        if level > 1:
-            return False
-        if 'refUuid' in sub_dict:
-            sub_dict['uuid'] = sub_dict.pop('refUuid', None)
-            sub_dict['type'] = 'topic_group'
-        if params.tagCallback:
-            params.tagCallback(level, sub_dict)
-        return True
+    # if level > 0:
+    #     if level > 1:
+    #         return False
+    #     if 'refUuid' in sub_dict:
+    #         sub_dict['uuid'] = sub_dict.pop('refUuid', None)
+    #         sub_dict['type'] = 'topic_group'
+    #     if params.tagCallback:
+    #         params.tagCallback(level, sub_dict)
+    #     return True
 
     if 'type' in sub_dict and sub_dict['type'] == 'topic':
+        # for ctg in sub_dict['tags']:
+        #    if 'uuid' in ctg and ctg['uuid'] not in params.customersCtg:
+        #        return False
         for ctg in sub_dict['tags']:
-            if 'uuid' in ctg and ctg['uuid'] not in params.customersCtg:
-                return False
+            if 'refUuid' in ctg:
+                sub_dict['parent'] = ctg['refUuid']
+            if 'uuid' in ctg:
+                sub_dict['parent'] = ctg['uuid']
+        if 'parent' in sub_dict:
+            sub_dict.pop('tags', None)
         if params.tagCallback:
             params.tagCallback(level, sub_dict)
         return True
@@ -146,7 +157,7 @@ def traverse_article_tags(params: Params, level: int, d: Dict[str, Any]):
         if not _filter_tags(params, level, d['tags'][i]):
             del d['tags'][i]
             continue
-        traverse_article_tags(params, level + 1, d['tags'][i])
+        # traverse_article_tags(params, level + 1, d['tags'][i])
     if not d['tags']:
         d.pop('tags', None)
 

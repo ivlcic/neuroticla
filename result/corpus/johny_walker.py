@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Union, Dict, Any, Callable
 
-logger = logging.getLogger('play.cluster.dump')
+logger = logging.getLogger('johny.walker')
 
 
 class State:
