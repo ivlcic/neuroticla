@@ -179,6 +179,7 @@ Individual news articles are stored in the following JSON format:
 * Simplified `tags` section:
   We removed unnecessary tags and tag information, and incorporated two JSON properties: `sentiment` and `parent`. 
   The parent property indicates the group to which the topic is associated, and it may also include the sentiment property.
+* Added `IPTC` manual mapping (`kwe_iptc_map.csv`) between `Keyword Expression` and `IPTC` tags where applicable: 
 
 ### A sample with changes:
 ```json
