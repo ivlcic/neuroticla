@@ -111,7 +111,7 @@ def _extract_intervals(matched: List[Dict[str, Any]], kwe_iptc_map: Dict[str, Di
     return results
 
 
-def correct(arg) -> int:
+def correct_old(arg) -> int:
     token = os.environ.get('KMAP_TOKEN')
     if not token:
         logger.error('Missing KMAP_TOKEN environment variable')
@@ -139,7 +139,14 @@ def correct(arg) -> int:
     params = Params(arg.start_date, arg.end_date, customers, arg.result_dir)
 
     def callback(s: State, saved: Dict[str, Any], article: Article) -> int:
-        if 'ver' in saved and saved['ver'] == '1.1b':
+        if not os.path.exists(s.file):
+            logger.warning("Unable to find article file %s", s.file)
+            return 0
+        if len(saved) == 1 and 'ver' in saved:
+            logger.warning("Corrupted article file %s", s.file)
+            os.remove(s.file)
+            return 0
+        if 'ver' in saved and (saved['ver'] == '1.1b' or saved['ver'] == '1.1c'):
             return 1
         filter_article(article)
         topic_uuids = []
@@ -177,6 +184,63 @@ def correct(arg) -> int:
                 kws['contentIntervals'], kwe_iptc_map
             )
         saved['ver'] = '1.1b'
+
+        with open(s.file, 'w', encoding='utf8') as json_file:
+            json.dump(saved, json_file, indent='  ', ensure_ascii=False)
+        return 1
+
+    state = load_range(params, callback)
+
+    logger.info(
+        "Corrected [%s] files [%s::%s] ", state.total, state.start, state.end
+    )
+    return 0
+
+
+def correct(arg) -> int:
+    token = os.environ.get('KMAP_TOKEN')
+    if not token:
+        logger.error('Missing KMAP_TOKEN environment variable')
+        return 1
+
+    if os.path.exists(arg.customers):
+        with open(arg.customers) as f:
+            customers = f.read().splitlines()
+    else:
+        customers = arg.customers.split(',')
+
+    params = Params(arg.start_date, arg.end_date, customers, arg.result_dir)
+
+    def callback(s: State, saved: Dict[str, Any], article: Article) -> int:
+        if not os.path.exists(s.file):
+            logger.warning("Unable to find article file %s", s.file)
+            return 0
+        if len(saved) == 1 and 'ver' in saved:
+            logger.warning("Corrupted article file %s", s.file)
+            os.remove(s.file)
+            return 0
+        if 'ver' in saved and saved['ver'] == '1.1c':
+            return 1
+
+        filter_article(article)
+        article_rates: Union[List, None] = article.data.pop('rates', None)
+        rates = {}
+        if article_rates is not None:
+            for r in article_rates:
+                rate_type = r['id']['rateType']
+                rated = r['id']['beanUuid']
+                if rate_type == 'CustomerTopic' or rate_type == 'CustomerTopicGroup':
+                    rates[rated] = int(r['value'])
+
+        # noinspection PyUnusedLocal
+        for tag in saved['tags']:
+            parent_uuid = tag.pop('parent', None)
+            if parent_uuid is not None:
+                tag['parent'] = {'uuid': parent_uuid}
+                if parent_uuid in rates:
+                    tag['parent']['sentiment'] = rates[parent_uuid]
+
+        saved['ver'] = '1.1c'
 
         with open(s.file, 'w', encoding='utf8') as json_file:
             json.dump(saved, json_file, indent='  ', ensure_ascii=False)

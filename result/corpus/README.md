@@ -167,6 +167,117 @@ Individual news articles are stored in the following JSON format:
 }
 ```
 
+## Version 1.1 changes
+* `Keyword Expression` reverse match was added:  
+  Topics are typically chosen based on the match of a Keyword Expression, as recommended by the system to a human editor. 
+  However, in version 1.0, the specific sections of the text that led to the suggestion of a particular topic are not recorded. 
+  To identify the relevant parts of the text, the matching process was performed again, 
+  but this time only on topics that had been manually verified. 
+  The `Keyword Expression` itself is recorded together with matching text spans in appropriate JSON sections. 
+  Matching was conducted separately for the title and the body of the text.
+  Marked matched `Keyword Expression` can now be a source for *Sentiment Target* discovery or learning.
+* Simplified `tags` section:
+  We removed unnecessary tags and tag information, and incorporated two JSON properties: `sentiment` and `parent`. 
+  The parent property indicates the group to which the topic is associated, and it may also include the sentiment property.
+
+### A sample with changes:
+```json
+{
+  ...
+  "body": {
+    "text": "Predsednik Republike Srbije Aleksandar Vučić sutra će, povodom obeležavanja početka rada Gasnog interkonektora Srbija-Bugarska, ugostiti u Nišu\n\npredsednika Republike Azerbejdžan Ilhama Alijeva, predsednika Republike Bugarske Rumena Radeva i ambasadora Evropske unije u Srbiji Emanuela Žiofrea.\n\n  Tokom boravka u Nišu, planirani su i odvojeni bilateralni susreti predsednika Aleksandra Vučića sa predsednicima Republike Azerbejdžan i Republike Bugarske, saopštila je predsednikova Služba za saradnju s medijima.\n\n  Predviđen je i prikaz opreme i sposobnosti jedinica Vojske Srbije – protivdronskih PVO sistema, bespilotnih i upravljanih vazduhoplovnih i zemaljskih borbenih platformikao i sposobnosti padobranskih i specijalnih jedinica, dodaje se u saopštenju.\n\n  Završetkom radova na gasovodu do Bugarske omogućiće se sigurnije i stabilnije snabdevanje Srbije gasom iz različitih izvora, posebno iz Azerbejdžana.\n\n  Izgradnja novog gasovoda u dužini od 109 kilometara od Niša do Dimitrovgrada trajala je 12 meseci. Ukupna dužina dvosmernog gasovoda Srbija-Bugarska je 170 kilometara, od Novog Iskara, ublizini Sofije, do Niša.\n\n  Srbija je potpisala ugovor o interkonekciji sa Bulgartransgasom i komercijalni ugovor o snabdevanju do 400 miliona kubnih metara gasa iz Azerbejdžana do kraja 2024. godine.\n\n  Ukupna vrednost gasnog interkonektora Niš – Dimitrovgrad – Bugarska, iznosi 85,5 miliona evra. Projekat je finansiran delom kroz bespovratnu pomoć EU, u visini od 49,6 miliona evra, kao i 25 miliona evra povoljnog kredita Evropske investicione banke koji će Srbija plaćati za deo gasovoda koji prolazi kroz Srbiju.\n\n  Republika Srbija je za ovaj projekati nterkonekcije Srbija-Bugarska izdvojila 15 miliona evra i 7,5 miliona evra za pripremne radove i projektovanje.\n\n  Gas čini 13 odsto potrošnje primarne energije u Srbiji i do sada je mogao da se dobije samo sa dve ulazne tačke, preko gasovoda Balkanski tok i iz Mađarske.\n\n  UDARNA VEST.rs (Blic zvor: Tanjug)",
+    "stats": {
+      ...
+    },
+    "matches": {
+      "kwe": {
+        "0d776998-f284-4dbc-a72d-725b2ca19ce6": {
+          "topic": {
+            "uuid": "3ef00f78-759f-4906-86dc-882f0d2ac662",
+            "name": "Emanuele Giaufret"
+          },
+          "expr": "\"emanuel* giaufre*\" OR \"emanuel* žofre*\" OR \"емануел* жофре*\" OR \"emanu* žiofr*\" OR \"емануел* жиофр*\" OR \"šef* delegacij* evrops* unij*\" OR \"шеф* делегациј* европс* униј*\" OR \"emanue* ziofre*\""
+        },
+        "6abd7e13-043d-4a0d-9966-7c48a145f769": {
+          "topic": {
+            "uuid": "3ef00f78-759f-4906-86dc-882f0d2ac662",
+            "name": "Emanuele Giaufret"
+          },
+          "expr": "\"emanuel* giaufre*\" OR \"emanuel* žofre*\" OR \"емануел* жофре*\" OR \"emanu* žiofr*\" OR \"емануел* жиофр*\""
+        },
+        "fc4c593d-9450-400e-a35b-96685b65d0e8": {
+          "topic": {
+            "uuid": "67ebcac5-fc7d-48ab-85ce-031e785ade55",
+            "name": "EIB"
+          },
+          "expr": "\"evrop* investici* ban*\" OR \"евро* инвести* бан*\" OR eib OR еиб OR EIB OR ЕИБ"
+        }
+      },
+      "spans": [
+        {
+          "start": 277,
+          "end": 293,
+          "kwe": [
+            "0d776998-f284-4dbc-a72d-725b2ca19ce6",
+            "6abd7e13-043d-4a0d-9966-7c48a145f769"
+          ]
+        },
+        {
+          "start": 1531,
+          "end": 1558,
+          "kwe": [
+            "fc4c593d-9450-400e-a35b-96685b65d0e8"
+          ]
+        }
+      ]
+    }
+  },
+  "title": {
+    "text": "Sutra počinje sa radom gasni Gasni interkonektor Srbija-Bugarska! Predsednik Vučić ugostiće Alijeva i Radeva u Nišu",
+    "stats": {
+      ...
+    },
+    "matches": {
+      "kwe": {},
+      "spans": []
+    }
+  },
+  "embed_e5": [
+    ...
+  ],
+  "embed_oai": [
+    ...
+  ],
+  "stats": {
+    ...
+  },
+  "tags": [
+    {
+      "uuid": "3ef00f78-759f-4906-86dc-882f0d2ac662",
+      "type": "topic",
+      "name": "Emanuele Giaufret",
+      "parent": {
+        "uuid": "1a9482ea-2222-3f7a-93e0-0b3c0c76797b",
+        "sentiment": 1
+      }
+    },
+    {
+      "uuid": "67ebcac5-fc7d-48ab-85ce-031e785ade55",
+      "type": "topic",
+      "name": "EIB",
+      "sentiment": 0,
+      "parent": {
+        "uuid": "a2e17897-4ebc-3132-a41d-b9361a4c404f"
+      }
+    }
+  ],
+  "ver": "1.1c"
+}
+```
+
+
+## Corpus index
+
 For convenience, an index file (`EMMA_1mio-v1.0-index.cvs`) was constructed from the corpus article files for quicker and easier:
 - Navigation
 - Sub-corpus selection
