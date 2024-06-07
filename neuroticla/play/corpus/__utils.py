@@ -24,6 +24,7 @@ class State:
         self.total: int = 0
         self.file: str = ''
         self.relPath: str = ''
+        self.relDir: str = ''
         self.log: Dict[str, Any] = {}
 
 
@@ -31,7 +32,7 @@ tag_callback = Callable[[int, Dict[str, Any]], None]
 
 
 class Params:
-    def __init__(self, start_date: str, end_date: str, customers: List[str], result_dir: str):
+    def __init__(self, start_date: str, end_date: str, customers: Union[None, List[str]], result_dir: str):
         self.start_date = start_date
         self.end_date = end_date
         self.start = datetime.fromisoformat(start_date).astimezone()
@@ -186,7 +187,7 @@ def fs_range(params: Params, callback: load_range_callback) -> State:
     while current_date > params.start:
         prev_day = current_date - timedelta(days=1)
         rel_path = os.path.join(str(prev_day.year), f"{prev_day.month:02d}", f"{prev_day.day:02d}")
-
+        state.relDir = rel_path
         day_dir = os.path.join(params.result_dir, rel_path)
         if not os.path.exists(day_dir):
             os.makedirs(day_dir)

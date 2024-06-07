@@ -13,7 +13,7 @@ from ...oai.tokenize import truncate_text_tokens
 
 logger = logging.getLogger('play.cluster.embed')
 
-__SOURCE_PATT = regex.compile(r'^[\p{Nd}\p{Lu}\s]+([,\s*])*(\s*(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})([,\s*])*(\s*\p{Lu}{2,}[\p{Nd}\p{Lu}\s]+([,\s*])*(\s*\d{1,2}:\d{0,2})?)?)?\s*$')
+__SOURCE_PATT = regex.compile(r'^([\p{Nd}\p{Lu}\s]+([,\s*]))*(\s*(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})([,\s*])*(\s*\p{Lu}{2,}[\p{Nd}\p{Lu}\s]+([,\s*])*(\s*\d{1,2}:\d{0,2})?)?)?\s*$')
 __ACTOR_PATT = regex.compile(r'^[\p{Nd}\p{Lu}\s]+(\([\s\p{L}\p{Nd}\p{P}]+\))?\s*$')
 
 

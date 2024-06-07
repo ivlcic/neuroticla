@@ -2,6 +2,8 @@ import csv
 import json
 import logging
 import os
+from datetime import datetime
+
 import pandas as pd
 from typing import List, Dict, Any, Union
 
@@ -132,11 +134,12 @@ def correct_old(arg) -> int:
             logger.error("Unable to load CSV tag map file [%s].", map_file_name)
             return 1
 
-    if os.path.exists(arg.customers):
-        with open(arg.customers) as f:
-            customers = f.read().splitlines()
-    else:
-        customers = arg.customers.split(',')
+    #if os.path.exists(arg.customers):
+    #    with open(arg.customers) as f:
+    #        customers = f.read().splitlines()
+    #else:
+    #    customers = arg.customers.split(',')
+    customers = None
 
     params = Params(arg.start_date, arg.end_date, customers, arg.result_dir)
 
@@ -148,11 +151,27 @@ def correct_old(arg) -> int:
             logger.warning("Corrupted article file %s", s.file)
             os.remove(s.file)
             return 0
-        if 'ver' in saved and (saved['ver'] == '1.1b' or saved['ver'] == '1.1c'):
+        if 'ver' in saved and (saved['ver'] == '1.1a' or saved['ver'] == '1.1c'):
             return 1
+        logger.info("Correcting [%s]", s.file)
+        el: Elastika = Elastika()
+        el.limit(1)
+        el.filter_uuid(saved['uuid'])
+        articles = el.get(
+            datetime.fromisoformat("2022-12-30").astimezone(),
+            datetime.fromisoformat("2024-01-02").astimezone()
+        )
+        if len(articles) == 0:
+            logger.warning("Unable to find article %s", s.file)
+            os.remove(s.file)
+            return 0
+        article = articles[0]
+
         filter_article(article)
+        saved['tags'] = article.data['tags']
+
         topic_uuids = []
-        article_rates: Union[List, None] = article.data.pop('rates', None)
+        article_rates: Union[List, None] = saved.pop('rates', None)
         rates = {}
         if article_rates is not None:
             for r in article_rates:
@@ -174,8 +193,9 @@ def correct_old(arg) -> int:
                     sub_dict['name'] = article.data['topic_names'][sub_dict['uuid']]
 
         params.tagCallback = filter_tag
+
         traverse_article_tags(params, 0, saved)
-        if 'title' in saved and 'matches1' not in saved['title']:
+        if 'title' in saved and 'matches1' not in saved['title'] and len(topic_uuids):
             kws = _get_keywords(
                 topic_uuids, saved['uuid'], saved['title']['text'], saved['body']['text']
             )
@@ -185,6 +205,11 @@ def correct_old(arg) -> int:
             saved['body']['matches'] = _extract_intervals(
                 kws['contentIntervals'], kwe_iptc_map
             )
+        if 'tags' not in saved:
+            logger.warning("Article %s has no tags.", s.file)
+            os.remove(s.file)
+            return 0
+
         saved['ver'] = '1.1b'
 
         with open(s.file, 'w', encoding='utf8') as json_file:
@@ -205,13 +230,13 @@ def correct(arg) -> int:
         logger.error('Missing KMAP_TOKEN environment variable')
         return 1
 
-    if os.path.exists(arg.customers):
-        with open(arg.customers) as f:
-            customers = f.read().splitlines()
-    else:
-        customers = arg.customers.split(',')
+    #if os.path.exists(arg.customers):
+    #    with open(arg.customers) as f:
+    #        customers = f.read().splitlines()
+    #else:
+    #    customers = arg.customers.split(',')
 
-    params = Params(arg.start_date, arg.end_date, customers, arg.result_dir)
+    params = Params(arg.start_date, arg.end_date, None, arg.result_dir)
 
     def callback(s: State, saved: Dict[str, Any], article: Article) -> int:
         if not os.path.exists(s.file):
@@ -223,6 +248,19 @@ def correct(arg) -> int:
             return 0
         if 'ver' in saved and saved['ver'] == '1.1c':
             return 1
+        logger.info("Correcting [%s]", s.file)
+        el: Elastika = Elastika()
+        el.limit(1)
+        el.filter_uuid(saved['uuid'])
+        articles = el.get(
+            datetime.fromisoformat("2022-12-30").astimezone(),
+            datetime.fromisoformat("2024-01-02").astimezone()
+        )
+        if len(articles) == 0:
+            logger.warning("Unable to find article %s", s.file)
+            os.remove(s.file)
+            return 0
+        article = articles[0]
 
         filter_article(article)
         article_rates: Union[List, None] = article.data.pop('rates', None)

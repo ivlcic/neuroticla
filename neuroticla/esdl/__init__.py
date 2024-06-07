@@ -150,7 +150,7 @@ class Elastika:
             filters = ',' + ','.join(self._filters)
         return query.replace('<filters>', filters)
 
-    def filter_customer(self, customer_uuid: Union[str, Iterable[str]]) -> TArticles:
+    def filter_customer(self, customer_uuid: Union[None, str, Iterable[str]]) -> TArticles:
         if not customer_uuid:
             self._filter['customers'] = []
             return self
@@ -161,7 +161,7 @@ class Elastika:
         [self._filter['customers'].append(str(uuid3(uuid.NAMESPACE_URL, 'CustomerTopicGroup.' + x))) for x in customer_uuid]
         return self
 
-    def filter_topic(self, topic_uuid: Union[str, Iterable[str]]) -> TArticles:
+    def filter_topic(self, topic_uuid: Union[None, str, Iterable[str]]) -> TArticles:
         if not topic_uuid:
             self._filter['topics'] = []
             return self
@@ -171,7 +171,7 @@ class Elastika:
         self._filter['topics'].extend(topic_uuid)
         return self
 
-    def filter_uuid(self, a_uuid: Union[str, Iterable[str]]) -> TArticles:
+    def filter_uuid(self, a_uuid: Union[None, str, Iterable[str]]) -> TArticles:
         if not a_uuid:
             self._filter['uuids'] = []
             return self
@@ -181,7 +181,7 @@ class Elastika:
         self._filter['uuids'].extend(a_uuid)
         return self
 
-    def field(self, field: Union[str, Iterable[str]]) -> TArticles:
+    def field(self, field: Union[None, str, Iterable[str]]) -> TArticles:
         if not field:
             self._fields = ['uuid']
             return self
@@ -203,7 +203,7 @@ class Elastika:
         self._filter['media_tags'].append(tag)
         return self
 
-    def filter_media(self, media_uuid: Union[str, Iterable[str]]) -> TArticles:
+    def filter_media(self, media_uuid: Union[None, str, Iterable[str]]) -> TArticles:
         if not media_uuid:
             self._filter['media'] = []
             return self
@@ -213,7 +213,7 @@ class Elastika:
         self._filter['media'].extend(media_uuid)
         return self
 
-    def filter_text(self, prefix: Union[str, Iterable[str]]) -> TArticles:
+    def filter_text(self, prefix: Union[None, str, Iterable[str]]) -> TArticles:
         if not prefix:
             self._filter['prefix'] = []
             return self

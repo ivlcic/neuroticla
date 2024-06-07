@@ -3,7 +3,7 @@ import logging
 from argparse import ArgumentParser
 from datetime import datetime, timezone, timedelta
 
-from . import dump, stats, cluster
+from . import dump, extract, stats, cluster
 from ... import CommonArguments
 
 logger = logging.getLogger('play.cluster')
@@ -34,8 +34,16 @@ def corpus_dump(arg) -> int:
     return dump.dump(arg)
 
 
+def corpus_correct_old(arg) -> int:
+    return dump.correct_old(arg)
+
+
 def corpus_correct(arg) -> int:
     return dump.correct(arg)
+
+
+def corpus_extract(arg) -> int:
+    return extract.extract_data(arg)
 
 
 def corpus_sentiment(arg) -> int:
