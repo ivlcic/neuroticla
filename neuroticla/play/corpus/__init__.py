@@ -46,6 +46,10 @@ def corpus_extract(arg) -> int:
     return extract.extract_data(arg)
 
 
+def corpus_extract_ebd(arg) -> int:
+    return extract.extract_embeddings(arg)
+
+
 def corpus_sentiment(arg) -> int:
     return dump.sentiment(arg)
 

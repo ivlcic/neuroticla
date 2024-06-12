@@ -4,8 +4,7 @@ import logging
 import os
 import openai
 
-from typing import List, Dict, Any
-
+from typing import List, Dict, Any, Tuple, Set
 
 from .__embed import _filter_body
 from .__utils import load_range, State, Params
@@ -78,7 +77,7 @@ def _extract_substring(text, start_index, end_index):
     return text[start_index:end_index]
 
 
-def _write_spans(kwes: Dict[str, Any], saved, matches, text, f_name):
+def _write_spans(kwes: Dict[str, Any], saved, matches, text, f_name) -> Tuple[Set[str], Set[str]]:
     t_names = set()
     k_matches = set()
     for t in saved['tags']:
@@ -94,7 +93,7 @@ def _write_spans(kwes: Dict[str, Any], saved, matches, text, f_name):
                         kwes[k_part] = {
                             'uuid': k_uuid,
                             'expr': matches['kwe'][k_uuid]['expr'],
-                            'parent': t_uuid
+                            'parent_id': t_uuid.split('-')[0]
                         }
                     m = _extract_substring(text, s['start'], s['end'])
                     if m:
@@ -107,7 +106,7 @@ def _write_spans(kwes: Dict[str, Any], saved, matches, text, f_name):
                             'kwe': k_part
                         }
                     )
-    return t_names.union(k_matches)
+    return t_names, k_matches
 
 
 def load_map_file(file_name: str, cols: List[str]) -> Dict[str, Dict[str, Any]]:
@@ -157,23 +156,26 @@ def extract_data(arg) -> int:
     params = Params(arg.start_date, arg.end_date, None, arg.result_dir)
 
     kwe_file_name = os.path.join(save_dir, 'map_kwes.csv')
-    kwe_cols = ['uuid', 'expr', 'parent']
+    kwe_cols = ['uuid', 'expr', 'parent_id']
     kwes = load_map_file(kwe_file_name, kwe_cols)
 
     topic_file_name = os.path.join(save_dir, 'map_topics.csv')
-    topic_cols = ['uuid', 'name', 'count', 'parent']
+    topic_cols = ['uuid', 'name', 'count', 'parent_id', 'monitoring_country', 'monitoring_industry',
+                  'client_name', 'client_id', 'parent_uuid', 'client_uuid']
+
     topics = load_map_file(topic_file_name, topic_cols)
 
     media_file_name = os.path.join(save_dir, 'map_media.csv')
-    media_cols = ['uuid', 'name', 'country', 'count', 'type', 'reach', 'url']
+    media_cols = ['uuid', 'name', 'country', 'count', 'type', 'reach', 'url', 'public']
     medias = load_map_file(media_file_name, media_cols)
 
     article_file_name = os.path.join(save_dir, f'map_articles_{params.start.year}_{params.start.month:02d}.csv')
     article_cols = [
-        'uuid', 'created', 'published', 'country', 'lang', 'scr', 'm_id', 'rel_path', 'filtered', 'url', 'sent',
-        'words', 'sp_tokens', 'n_tags', 'tags'
+        'uuid', 'public', 'created', 'published', 'country', 'mon_country', 'lang', 'script', 'm_id',
+        'rel_path', 'url', 'sent', 'words', 'sp_tokens', 'tags_count', 'tags'
     ]
-    articles = load_map_file(article_file_name, article_cols)
+    # articles = load_map_file(article_file_name, article_cols)
+    articles = {}
 
     data_file_name = f'data_{params.start.year}_{params.start.month:02d}.jsonl'
     data = []
@@ -218,6 +220,7 @@ def extract_data(arg) -> int:
         uuid = saved.pop('uuid')
         saved['id'] = uuid.split('-')[0]
         saved['country'] = country['name']
+        saved['mon_country'] = saved['country']
         saved['lang'] = saved.pop('language').split('-')[0]
         saved['m_id'] = m_part
 
@@ -226,10 +229,10 @@ def extract_data(arg) -> int:
         is_cyrillic = False
         if title['text']:
             is_cyrillic = any(0x0400 <= ord(char) <= 0x04ff for char in title['text'])
-            saved['title']['scr'] = 'latn' if not is_cyrillic else 'cyrl'
+            saved['title']['script'] = 'latn' if not is_cyrillic else 'cyrl'
         if saved['body']['text']:
             is_cyrillic = any(0x0400 <= ord(char) <= 0x04ff for char in saved['body']['text'])
-            saved['body']['scr'] = 'latn' if not is_cyrillic else 'cyrl'
+            saved['body']['script'] = 'latn' if not is_cyrillic else 'cyrl'
 
         stats = saved['title'].pop('stats', None)
         saved['title']['stat'] = [stats['sent'], stats['w_t'], stats['sp_t']]
@@ -238,10 +241,13 @@ def extract_data(arg) -> int:
         saved['body']['stat'] = [stats['sent'], stats['w_t'], stats['sp_t']]
 
         matches = saved['title'].pop('matches')
-        title_kwords = _write_spans(kwes, saved, matches, saved['title']['text'], 'ts')
+        title_topics, title_kwords = _write_spans(kwes, saved, matches, saved['title']['text'], 'ts')
         matches = saved['body'].pop('matches')
-        body_kwords = _write_spans(kwes, saved, matches, saved['body']['text'], 'bs')
+        body_topics, body_kwords = _write_spans(kwes, saved, matches, saved['body']['text'], 'bs')
+
+        # merge matched keywords and topics
         body_kwords.union(title_kwords)
+        body_topics.union(title_topics)
 
         # prompt = f"{body_kwords}\n\n{saved['title']['text']}\n\n{saved['body']['text']}"
         # qa_data = _qagen(prompt)
@@ -255,8 +261,8 @@ def extract_data(arg) -> int:
             t_part = t_uuid.split('-')[0]
             t_uuids.add(t_part)
             t['id'] = t_part
-            t['bs'] = t.pop('bs')
             t['ts'] = t.pop('ts')
+            t['bs'] = t.pop('bs')
             parent = t.pop('parent', None)
             if t_part not in topics:
                 topics[t_part] = {
@@ -267,10 +273,16 @@ def extract_data(arg) -> int:
                 }
             else:
                 topics[t_part]['count'] = int(topics[t_part]['count']) + 1
-            if parent is not None and 'uuid' in parent:
-                t['parent'] = parent['uuid'].split('-')[0]
+            #if parent is not None and 'uuid' in parent:
+            #    t['parent'] = parent['uuid'].split('-')[0]
+
+            if 'monitoring_country' in topics[t_part]:
+                saved['mon_country'] = topics[t_part]['monitoring_country']
         saved['tags'] = tags
-        saved['kw'] = list(body_kwords)
+
+        saved['public'] = 1
+        if 'public' in medias[m_part] and (medias[m_part]['public'] == 0 or medias[m_part]['public'] == '0'):
+            saved['public'] = 0
 
         b_dict = saved.pop('body')
         body = ''
@@ -294,20 +306,20 @@ def extract_data(arg) -> int:
         stats = saved.pop('stats')
         articles[saved['id']] = {
             'uuid': uuid,
+            'public': saved['public'],
             'created': cdate,
             'published': pdate,
             'country': country['name'],
+            'mon_country': saved['mon_country'],
             'lang': saved['lang'],
-            'scr': 'latn' if not is_cyrillic else 'cyrl',
+            'script': 'latn' if not is_cyrillic else 'cyrl',
             'm_id': saved['m_id'],
             'rel_path': s.relDir,
-            'filtered': filtered,
-            #  'file': data_file_name,
             'url': url,
             'sent': stats['sent'],
             'words': stats['w_t'],
             'sp_tokens': stats['sp_t'],
-            'n_tags': len(t_uuids),
+            'tags_count': len(t_uuids),
             'tags': list(t_uuids)
         }
 
@@ -323,8 +335,8 @@ def extract_data(arg) -> int:
         "Corrected [%s] files [%s::%s] ", state.total, state.start, state.end
     )
     write_map_file(kwes, kwe_file_name, kwe_cols)
-    write_map_file(topics, topic_file_name, topic_cols)
-    write_map_file(medias, media_file_name, media_cols)
+    # write_map_file(topics, topic_file_name, topic_cols)
+    # write_map_file(medias, media_file_name, media_cols)
     write_map_file(articles, article_file_name, article_cols)
 
     return 0
@@ -342,26 +354,7 @@ def extract_embeddings(arg) -> int:
 
     params = Params(arg.start_date, arg.end_date, None, arg.result_dir)
 
-    kwe_file_name = os.path.join(save_dir, 'map_kwes.csv')
-    kwe_cols = ['uuid', 'expr', 'parent']
-    kwes = load_map_file(kwe_file_name, kwe_cols)
-
-    topic_file_name = os.path.join(save_dir, 'map_topics.csv')
-    topic_cols = ['uuid', 'name', 'count', 'parent']
-    topics = load_map_file(topic_file_name, topic_cols)
-
-    media_file_name = os.path.join(save_dir, 'map_media.csv')
-    media_cols = ['uuid', 'name', 'country', 'count', 'type', 'reach', 'url']
-    medias = load_map_file(media_file_name, media_cols)
-
-    article_file_name = os.path.join(save_dir, f'map_articles_{params.start.year}_{params.start.month:02d}.csv')
-    article_cols = [
-        'uuid', 'created', 'published', 'country', 'lang', 'scr', 'm_id', 'rel_path', 'filtered', 'url', 'sent',
-        'words', 'sp_tokens', 'n_tags', 'tags'
-    ]
-    articles = load_map_file(article_file_name, article_cols)
-
-    data_file_name = f'data_{params.start.year}_{params.start.month:02d}.jsonl'
+    data_file_name = f'text_ada_002_{params.start.year}_{params.start.month:02d}.jsonl'
     data = []
 
     def callback(s: State, saved: Dict[str, Any], article: Article) -> int:
@@ -378,126 +371,13 @@ def extract_embeddings(arg) -> int:
             os.remove(s.file)
             return 0
 
-        pdate = saved.pop('published')
-        country = saved.pop('country')
-        media = saved.pop('media')
-        m_part = media['uuid'].split('-')[0]
-        if m_part not in medias:
-            medias[m_part] = {
-                'uuid': media['uuid'],
-                'name': media['name'],
-                'country': country['name'],
-                'type': media['type']['name'],
-                'reach': media['mediaReach'] if 'mediaReach' in media else 0,
-                'count': 1,
-                'url':  media['url'] if 'url' in media else None,
-            }
-        else:
-            medias[m_part]['count'] = int(medias[m_part]['count']) + 1
-        saved.pop('rubric', None)
-        saved.pop('embed_e5', None)
-        saved.pop('embed_oai', None)
-        saved.pop('ver', None)
-        url = saved.pop('url', None)
-        cdate = saved.pop('created')
-        saved['date'] = cdate
         uuid = saved.pop('uuid')
         saved['id'] = uuid.split('-')[0]
-        saved['country'] = country['name']
-        saved['lang'] = saved.pop('language').split('-')[0]
-        saved['m_id'] = m_part
-
-        title = saved.pop('title')
-        saved['title'] = title
-        is_cyrillic = False
-        if title['text']:
-            is_cyrillic = any(0x0400 <= ord(char) <= 0x04ff for char in title['text'])
-            saved['title']['scr'] = 'latn' if not is_cyrillic else 'cyrl'
-        if saved['body']['text']:
-            is_cyrillic = any(0x0400 <= ord(char) <= 0x04ff for char in saved['body']['text'])
-            saved['body']['scr'] = 'latn' if not is_cyrillic else 'cyrl'
-
-        stats = saved['title'].pop('stats', None)
-        saved['title']['stat'] = [stats['sent'], stats['w_t'], stats['sp_t']]
-
-        stats = saved['body'].pop('stats', None)
-        saved['body']['stat'] = [stats['sent'], stats['w_t'], stats['sp_t']]
-
-        matches = saved['title'].pop('matches')
-        title_kwords = _write_spans(kwes, saved, matches, saved['title']['text'], 'ts')
-        matches = saved['body'].pop('matches')
-        body_kwords = _write_spans(kwes, saved, matches, saved['body']['text'], 'bs')
-        body_kwords.union(title_kwords)
-
-        # prompt = f"{body_kwords}\n\n{saved['title']['text']}\n\n{saved['body']['text']}"
-        # qa_data = _qagen(prompt)
-
-        tags = saved.pop('tags')
-        t_uuids = set()
-        for t in tags:
-            t_uuid = t.pop('uuid')
-            t.pop('type')
-            name = t.pop('name', None)
-            t_part = t_uuid.split('-')[0]
-            t_uuids.add(t_part)
-            t['id'] = t_part
-            t['bs'] = t.pop('bs')
-            t['ts'] = t.pop('ts')
-            parent = t.pop('parent', None)
-            if t_part not in topics:
-                topics[t_part] = {
-                    'uuid': t_uuid,
-                    'name': name,
-                    'count': 1,
-                    'parent': parent['uuid']
-                }
-            else:
-                topics[t_part]['count'] = int(topics[t_part]['count']) + 1
-            if parent is not None and 'uuid' in parent:
-                t['parent'] = parent['uuid'].split('-')[0]
-        saved['tags'] = tags
-        saved['kw'] = list(body_kwords)
-
-        b_dict = saved.pop('body')
-        body = ''
-        mt = media['type']['name']
-        filtered = False
-        if mt == 'radio' or mt == 'tv':
-            for line_idx, line in enumerate(b_dict['text'].split('\n')):
-                tmp = _filter_body(line_idx, line)
-                if tmp:
-                    body += '\n' if len(body) > 0 else ''
-                    body += tmp
-                if not tmp and line:
-                    body += '\n' if len(body) > 0 else ''
-                    body += " " * len(line)
-                    filtered = True
-
-        if body:
-            b_dict['text'] = body
-
-        saved['body'] = b_dict
-        stats = saved.pop('stats')
-        articles[saved['id']] = {
-            'uuid': uuid,
-            'created': cdate,
-            'published': pdate,
-            'country': country['name'],
-            'lang': saved['lang'],
-            'scr': 'latn' if not is_cyrillic else 'cyrl',
-            'm_id': saved['m_id'],
-            'rel_path': s.relDir,
-            'filtered': filtered,
-            #  'file': data_file_name,
-            'url': url,
-            'sent': stats['sent'],
-            'words': stats['w_t'],
-            'sp_tokens': stats['sp_t'],
-            'n_tags': len(t_uuids),
-            'tags': list(t_uuids)
+        embeddings = {
+            'id': uuid.split('-')[0],
+            'embeddings': saved.pop('embed_oai', None)
         }
-
-        data.append(saved)
+        data.append(embeddings)
         return 1
 
     state = load_range(params, callback)
@@ -506,11 +386,7 @@ def extract_embeddings(arg) -> int:
     with open(file_name, 'w', encoding='utf8') as json_file:
         json.dump(data, json_file, indent='  ', ensure_ascii=False)
     logger.info(
-        "Corrected [%s] files [%s::%s] ", state.total, state.start, state.end
+        "Exported [%s] files [%s::%s] ", state.total, state.start, state.end
     )
-    write_map_file(kwes, kwe_file_name, kwe_cols)
-    write_map_file(topics, topic_file_name, topic_cols)
-    write_map_file(medias, media_file_name, media_cols)
-    write_map_file(articles, article_file_name, article_cols)
 
     return 0

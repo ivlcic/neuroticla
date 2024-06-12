@@ -1,4 +1,4 @@
-če # neuroticla
+# neuroticla
 
 Library for neural networks based text classification and processing.
 
