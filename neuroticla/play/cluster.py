@@ -110,7 +110,10 @@ def cluster_seba(arg) -> int:
 
     customers = []
     if arg.customer:
-        customers = [arg.customer]
+        if ',' in arg.customer:
+            customers = [part.strip() for part in arg.customer.split(',')]
+        else:
+            customers = [arg.customer]
 
     articles: List[Article] = []
     params = Params(arg.start_date, arg.end_date, customers, arg.tmp_dir)
