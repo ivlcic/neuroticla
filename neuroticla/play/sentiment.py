@@ -12,6 +12,7 @@ from neuroticla import CommonArguments
 from neuroticla.esdl import Elastika, Article
 from neuroticla.play.corpus.__embed import _filter_body
 from neuroticla.play.corpus.__utils import filter_article
+from neuroticla.play.corpus.extract import load_map_file
 
 logger = logging.getLogger('play.sentiment.dump')
 
@@ -132,4 +133,67 @@ def sentiment_dump(arg) -> int:
     file_name = os.path.join(save_dir, f'sent_analytics-{year}.json')
     with open(file_name, 'w', encoding='utf8') as json_file:
         json.dump(articles, json_file, indent='  ', ensure_ascii=False)
+    return 0
+
+
+# ./play sentiment filter /home/nikola/downloads/sentiment/analytics
+# ./play sentiment filter /home/nikola/downloads/sentiment/editors
+def sentiment_filter(arg) -> int:
+    media_file_name = os.path.join(arg.result_dir, 'corpus', 'map_media.csv')
+    media_cols = ['uuid', 'name', 'country', 'count', 'type', 'reach', 'url', 'public']
+    medias = load_map_file(media_file_name, media_cols)
+
+    json_files = [f for f in os.listdir(arg.files) if f.endswith('.json')]
+    json_files.sort()
+    for file_name in json_files:
+        uuid_mapped_data = {}
+        file_path = os.path.join(arg.files, file_name)
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            for a in data:
+                uuid_mapped_data[a['uuid']] = a
+
+        def chunked_keys(sorted_keys, chunk_size):
+            for i in range(0, len(sorted_keys), chunk_size):
+                yield sorted_keys[i:i + chunk_size]
+
+        # Sorting the dictionary by UUID (time-based sorting)
+        sorted_keys = sorted(uuid_mapped_data.keys(), key=lambda x: uuid.UUID(x).time)
+        print(len(sorted_keys))
+
+        articles = []
+        year = 1900
+        for chunk in chunked_keys(sorted_keys, 500):
+            esdl = Elastika()
+            esdl.limit(1000)
+            esdl.filter_uuid(chunk)
+            esdl.field(['rubric', 'url', 'rates'])
+            article_chunk: List[Article] = esdl.gets('1900-01-01', '2025-01-01')
+            logger.info(
+                'First [%s -- %s] and last [%s -- %s]',
+                article_chunk[0].data['country']['name'],
+                article_chunk[0].data['created'],
+                article_chunk[-1].data['country']['name'],
+                article_chunk[-1].data['created']
+            )
+            for a in article_chunk:
+                if a.mediaType['name'] != 'internet':
+                    continue
+
+                m_uuid = a.data['media']['uuid']
+                m_id = m_uuid.split('-')[0]
+
+                if a.country == 'SI':
+                    m_map = medias.get(m_id)
+                    if m_map is not None:
+                        if m_map['public'] == 0:
+                            continue
+
+                ok_article = uuid_mapped_data[a.uuid]
+                ok_article['mid'] = m_id
+                articles.append(ok_article)
+
+        with open(os.path.join(arg.files, 'filtered_' + file_name), 'w', encoding='utf8') as json_file:
+            json.dump(articles, json_file, indent='  ', ensure_ascii=False)
+
     return 0
